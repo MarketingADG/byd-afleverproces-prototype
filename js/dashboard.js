@@ -51,12 +51,12 @@ function doorlooptijden() {
 }
 
 function teken() {
-  const lopend = orders.filter(o => huidigeFase(o) !== "klaar");
+  const lopend = orders.filter(o => !o.concept && huidigeFase(o) !== "klaar");
   const onderweg = lopend.filter(o => !o.vink.binnen);
-  const ingepland = lopend.filter(o => o.vink.wp_ingepland && !o.vink.wp_klaar);
+  const ingepland = lopend.filter(o => o.afleverdatum && dagenTot(o.afleverdatum) >= 0);
   const komendeWeek = lopend.filter(o => o.afleverdatum && dagenTot(o.afleverdatum) >= 0 && dagenTot(o.afleverdatum) <= 7);
   const over = lopend.filter(o => verwachteDatum(o) && dagenTot(verwachteDatum(o)) < 0);
-  const nietGeladen = lopend.filter(o => o.vink.wp_klaar && !o.vink.volgeladen);
+  const nietGeladen = lopend.filter(o => o.geladen === "nee" && !o.vink.volgeladen);
   const rood = lopend.filter(o => kaartStatus(o) === "rood");
 
   const per = periodes();
@@ -89,10 +89,10 @@ function teken() {
   bak.innerHTML = `
     <div class="kpi drie-rijen">
       ${tegel(onderweg.length, "Auto's onderweg")}
-      ${tegel(ingepland.length, "Ingepland in de werkplaats, nog niet klaar")}
+      ${tegel(ingepland.length, "Afleveringen ingepland")}
       ${tegel(komendeWeek.length, "Afleveringen komende 7 dagen")}
       ${tegel(over.length, "Over de verwachte leverdatum", over.length ? "rood" : "")}
-      ${tegel(nietGeladen.length, "WP-klaar, nog niet volgeladen", nietGeladen.length ? "oranje" : "")}
+      ${tegel(nietGeladen.length, "Niet geladen door de werkplaats, verkoop moet nog laden", nietGeladen.length ? "oranje" : "")}
       ${tegel(lopend.length, "Lopend in totaal")}
     </div>
     <section class="paneel afgeleverd">

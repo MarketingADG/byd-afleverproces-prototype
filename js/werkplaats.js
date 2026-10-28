@@ -1,6 +1,6 @@
 /* Werkplaats: weekagenda van maandag tot en met vrijdag. Elke auto staat op de dag waarop
-   hij klaar moet zijn (2 werkdagen voor de aflevering), niet op de afleverdatum. Daaronder
-   twee takenlijsten: onderdelen bestellen en auto's inplannen. */
+   hij klaar moet zijn, met de tijd: 48 uur voor de aflevering. Niet op de afleverdatum.
+   Daaronder twee takenlijsten: onderdelen bestellen en auto's inplannen. */
 
 const ik = kopbalk("werkplaats");
 const orders = laadOrders();
@@ -10,7 +10,8 @@ let openId = null;
 
 const WP_STATUS_TEKST = { rood: "Nog niet ingepland", oranje: "Ingepland", groen: "WP-klaar" };
 const KORT = { w_gecontroleerd: "accessoires invoeren", onderdelen: "bestellen", werkorder: "werkordernummer" };
-const lopendeOrders = () => orders.filter(o => huidigeFase(o) !== "klaar");
+const lopendeOrders = () => orders.filter(o => !o.concept && huidigeFase(o) !== "klaar");
+const om = o => o.aflevertijd ? `, ${o.aflevertijd.replace(":", ".")}` : "";
 
 function maandag(verschil) {
   const d = vandaag();
@@ -30,7 +31,8 @@ function wpBlok(o, dagIso) {
     <span class="wb1"><span class="stip st-${st}"></span>${esc(klantNaam(o))}</span>
     <span class="wb2">${esc(autoNaam(o))}</span>
     <span class="wb3">${esc(o.auto.kenteken || "Geen kenteken")} · meldcode ${esc(meldcode(o))}</span>
-    <span class="wb4">${o.vink.wp_klaar && st !== "groen" ? `WP-klaar, nog open: ${openPunten(o, 4).map(p => p.label.toLowerCase()).join(", ")}` : WP_STATUS_TEKST[st]}${telaat ? `, moest ${datumKort(wpDeadline(o))} klaar` : ""}</span>
+    <span class="wb3">Klaar uiterlijk ${telaat ? wpKlaarTekst(o) : o.aflevertijd ? o.aflevertijd.replace(":", ".") : "einde dag"}</span>
+    <span class="wb4">${o.vink.wp_klaar && st !== "groen" ? `WP-klaar, nog open: ${openPunten(o, 4).map(p => p.label.toLowerCase()).join(", ")}` : WP_STATUS_TEKST[st]}${telaat ? ", te laat" : ""}</span>
   </button>`;
 }
 
@@ -38,13 +40,13 @@ function tekenWeek() {
   const ma = maandag(weekVerschil);
   const dagen = [0, 1, 2, 3, 4].map(n => plusDagen(ma, n));
   const vandaagIso = naarIso(vandaag());
-  document.getElementById("weektitel").textContent = `Week ${weeknummer(ma)} · ${datumKort(dagen[0])} tot en met ${datumKort(dagen[4])}. Elke auto staat op de dag dat hij klaar moet zijn.`;
+  document.getElementById("weektitel").textContent = `Week ${weeknummer(ma)} · ${datumKort(dagen[0])} tot en met ${datumKort(dagen[4])}. Elke auto staat op het moment dat hij klaar moet zijn: 48 uur voor de aflevering.`;
 
   const metDeadline = lopendeOrders().filter(o => wpDeadline(o));
   document.getElementById("week").innerHTML = dagen.map(d => {
     /* wat te laat is en nog niet klaar, schuift mee naar vandaag */
     const hier = metDeadline.filter(o => wpDeadline(o) === d || (d === vandaagIso && wpDeadline(o) < d && werkplaatsStatus(o) !== "groen"))
-      .sort((a, b) => ["rood", "oranje", "groen"].indexOf(werkplaatsStatus(a)) - ["rood", "oranje", "groen"].indexOf(werkplaatsStatus(b)));
+      .sort((a, b) => wpMoment(a).localeCompare(wpMoment(b)));
     return `<section class="week-dag ${d === vandaagIso ? "vandaag" : ""}">
       <h2>${datumKort(d)}${d === vandaagIso ? " · vandaag" : ""}</h2>
       ${hier.map(o => wpBlok(o, d)).join("") || `<p class="dag-leeg">Niets klaar te maken</p>`}
@@ -58,7 +60,7 @@ function tekenTaken() {
   const inplannen = lopendeOrders().filter(o => o.vink.binnen && !o.vink.wp_ingepland)
     .sort((a, b) => (wpDeadline(a) || "9").localeCompare(wpDeadline(b) || "9"));
 
-  const uiterst = o => wpDeadline(o) ? `Klaar ${relatief(wpDeadline(o))}` : o.levertijd ? `Levertijd ${relatief(o.levertijd)}` : "";
+  const uiterst = o => wpDeadline(o) ? `Klaar ${relatief(wpDeadline(o))}${om(o)}` : o.levertijd ? `Levertijd ${relatief(o.levertijd)}` : "";
   document.getElementById("wp_taken").innerHTML = `
     <section class="taken-groep"><h2>Onderdelen bestellen <span class="n">${bestellen.length}</span></h2>
       ${bestellen.length ? `<div class="rijen">${bestellen.map(o => `<a class="taak" href="order.html?id=${o.id}#fase-2">
@@ -93,10 +95,14 @@ function vensterHtml(o) {
   return `<form method="dialog" class="venster-kop">
       <div><h2 id="venster_titel">${esc(klantNaam(o))}</h2><p>${esc(autoNaam(o))} · ${esc(o.auto.kenteken || "geen kenteken")} · meldcode ${esc(meldcode(o))}${o.werkorder ? " · " + esc(o.werkorder) : ""}</p></div>
       <button class="knop" aria-label="Sluiten">Sluiten</button></form>
-    <div class="melding ${werkplaatsStatus(o)}">Klaar uiterlijk ${datumKort(wpDeadline(o))}. ${WP_STATUS_TEKST[werkplaatsStatus(o)]}.</div>
+    <div class="melding ${werkplaatsStatus(o)}">Klaar uiterlijk ${wpKlaarTekst(o)}, 48 uur voor de aflevering. ${WP_STATUS_TEKST[werkplaatsStatus(o)]}.</div>
     <div class="venster-lijst">
       ${regel("wp_ingepland", "Ingepland in de werkplaats")}
       ${regel("wp_klaar", "Auto werkplaatsklaar", !!v.wp_ingepland, v.wp_ingepland ? "Zet WP-klaar ook in de Outlook-agenda" : "Eerst inplannen")}
+      <div class="punt ${o.geladen ? "klaar" : ""}"><span class="bol">${o.geladen ? icoon("vink", 12) : ""}</span>
+        <div><span class="lbl" id="l_laden">Laden</span><div class="meta">${o.geladen ? LADEN[o.geladen] : "Laadpaal vrij: laden. Zit hij vol, kies dan niet geladen; de verkoop laadt de auto dan."}</div></div>
+        <div class="ctl"><div class="janee" role="group" aria-labelledby="l_laden">${[["ja", "Geladen"], ["nee", "Niet geladen"]].map(([k, t]) =>
+          `<button type="button" data-laden="${k}" class="${o.geladen === k ? "aan" : ""}" aria-pressed="${o.geladen === k}">${t}</button>`).join("")}</div></div></div>
       ${o.auto.phev ? regel("getankt", "Getankt", true, "Plug-in hybride") : ""}
     </div>
     <h3>Onderdelen</h3>
@@ -130,6 +136,15 @@ venster.addEventListener("click", e => {
   const o = orders.find(x => x.id === openId);
   if (b.dataset.vink && b.getAttribute("aria-disabled") !== "true") { zetVink(o, b.dataset.vink, true); openVenster(o.id); }
   if (b.dataset.terug) { zetVink(o, b.dataset.terug, false); openVenster(o.id); }
+  if (b.dataset.laden) {
+    const was = faseStatus(o, 4);
+    o.geladen = b.dataset.laden;
+    o.log.push({ op: nu(), door: ik.naam, wat: `Laden: ${LADEN[o.geladen]}` });
+    if (was !== "groen" && faseStatus(o, 4) === "groen") o.log.push({ op: nu(), door: ik.naam, wat: "Fase 4 afgerond" });
+    bewaar(orders);
+    toast(o.geladen === "nee" ? `Niet geladen. ${o.verkoper} krijgt de taak om de auto vol te laden.` : "Geladen. Volladen hoeft de verkoop niet meer te doen.");
+    openVenster(o.id); tekenWeek(); tekenTaken();
+  }
 });
 
 document.addEventListener("click", e => {

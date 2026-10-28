@@ -1,6 +1,7 @@
 /* Mijn taken: alles wat bij één persoon openstaat, over alle auto's heen. De vijf delen van
-   verkoop en aflevering verschijnen pas als ze aan de beurt zijn. Een verkoper of
-   afleverspecialist kan een taak van een collega oppakken; die staat dan op zijn naam. */
+   verkoop en aflevering verschijnen pas als ze aan de beurt zijn en staan op naam van de
+   verkoper van die auto. Een verkoper of afleverspecialist kan een taak van een collega
+   overnemen; die staat dan op zijn naam. */
 
 const ik = kopbalk("taken");
 const orders = laadOrders();
@@ -30,7 +31,7 @@ function alleTaken() {
       const open = openPunten(o, nr);
       const f = faseInfo(nr);
       taak(`fase-${nr}`, f.eigenaar, { kleur: s, deadline: s === "rood" ? naarIso(vandaag()) : nr === 4 ? wpDeadline(o) : o.afleverdatum || o.levertijd,
-        kop: `Fase ${faseLabel(nr)} · ${f.naam}`, wat: open.length ? `${open.slice(0, 2).map(p => p.label).join(", ")}${open.length > 2 ? ` en nog ${open.length - 2}` : ""}` : "Fase opnieuw afronden na heropenen", anker: nr });
+        kop: o.concept && nr === 1 ? "Concept afmaken en opslaan" : `Fase ${faseLabel(nr)} · ${f.naam}`, wat: open.length ? `${open.slice(0, 2).map(p => p.label).join(", ")}${open.length > 2 ? ` en nog ${open.length - 2}` : ""}` : "Fase opnieuw afronden na heropenen", anker: nr });
     }
 
     /* de vijf delen, elk pas als hij aan de beurt is */
@@ -39,12 +40,12 @@ function alleTaken() {
       if (!d.open || d.klaar || (d.nr === 1 && o.type === "import")) continue;
       const fase = d.nr <= 2 ? 3 : 5;
       const open = d.nr === 2 ? openPunten(o, 3).filter(p => p.key !== "factuur").map(p => p.label) : [];
-      taak(`deel-${d.nr}`, "afleverspecialist", { kleur: faseStatus(o, fase) === "rood" ? "rood" : "oranje", deadline: datum[d.nr],
+      taak(`deel-${d.nr}`, "verkoper", { kleur: faseStatus(o, fase) === "rood" ? "rood" : "oranje", deadline: datum[d.nr],
         kop: `Deel ${d.nr} van 5 · ${d.label}`, wat: open.length ? `Nog open: ${open.slice(0, 3).map(eersteKlein).join(", ")}` : TYPES[o.type], anker: fase });
     }
     if (verkoopDelen(o)[4].klaar && lopend(faseStatus(o, 5))) {
       const open = openPunten(o, 5);
-      taak("aflevering", "afleverspecialist", { kleur: faseStatus(o, 5), deadline: o.afleverdatum,
+      taak("aflevering", "verkoper", { kleur: faseStatus(o, 5), deadline: o.afleverdatum,
         kop: "Aflevering afronden", wat: open.map(p => p.label).slice(0, 3).join(", "), anker: 5 });
     }
 
@@ -55,13 +56,9 @@ function alleTaken() {
     else if (t)
       taak(`contact-${t.soort}`, t.wie, { kleur: o.vink.binnen ? "oranje" : onderwegKleur(o) === "grijs" ? "oranje" : onderwegKleur(o), deadline: naarIso(vandaag()), kop: "Contact met de klant", wat: t.tekst });
 
-    if (o.poets?.datum && !o.poets.gedaan)
-      taak("poets", "poetser", { kleur: dagenTot(o.poets.datum) < 0 ? "rood" : "oranje", deadline: o.poets.datum,
-        kop: "Poetsen", wat: `${o.poets.vorm}, sleutel ligt bij: ${o.auto.sleutel}`, link: "poetsen.html" });
-
     if (o.vink.factuur && !o.vink.afgeleverd)
       taak("factuur", "administratie", { kleur: "oranje", deadline: o.afleverdatum,
-        kop: "Factuur maken", wat: `Aangevraagd door ${o.vink.factuur.door}, kenteken ${o.auto.kenteken || ""}` });
+        kop: "Factuur maken", wat: `Aangevraagd door ${o.vink.factuur.door}, kenteken ${o.auto.kenteken || ""}, te betalen ${bedrag(o.te_betalen) || "onbekend"}` });
   }
   return lijst;
 }
@@ -71,10 +68,10 @@ function rij(t, wie) {
   const kanOppakken = VERKOOP.includes(ik.rol) && VERKOOP.includes(t.rol) && t.naam !== ik.naam;
   return `<div class="taak met-actie">
     <span class="stip st-${t.kleur}"></span>
-    <div><a class="wie" href="${href}">${esc(klantNaam(t.o))}</a><div class="sub">${esc(t.o.auto.model || "")}${t.o.auto.kenteken ? " · " + esc(t.o.auto.kenteken) : ""}${wie ? "" : " · " + esc(t.naam)}${t.opgepakt ? " (opgepakt)" : ""}</div></div>
+    <div><a class="wie" href="${href}">${esc(klantNaam(t.o))}</a><div class="sub">${esc(t.o.auto.model || "")}${t.o.auto.kenteken ? " · " + esc(t.o.auto.kenteken) : ""}${wie ? "" : " · " + esc(t.naam)}${t.opgepakt ? " (overgenomen)" : ""}</div></div>
     <div class="wat"><div class="kop">${esc(t.kop)}</div><div class="sub">${esc(t.wat)}</div></div>
     <div class="wanneer">${t.deadline ? (t.o.afleverdatum && t.deadline === t.o.afleverdatum ? "Aflevering " : "") + relatief(t.deadline) : ""}</div>
-    <div class="actie">${kanOppakken ? `<button type="button" class="knop" data-oppakken="${t.o.id}|${t.sleutel}">Oppakken</button>` : ""}</div>
+    <div class="actie">${kanOppakken ? `<button type="button" class="knop" data-oppakken="${t.o.id}|${t.sleutel}">Overnemen</button>` : ""}</div>
   </div>`;
 }
 
@@ -94,7 +91,7 @@ function teken() {
     ? alleTaken().filter(t => VERKOOP.includes(t.rol) && t.naam !== ik.naam).length : 0;
   document.getElementById("samenvatting").innerHTML = (taken.length
     ? `${taken.length} ${taken.length === 1 ? "taak" : "taken"} open${rood ? `, ${rood} te laat` : ""}.`
-    : "") + (collega ? ` <button type="button" class="knop link" id="team">Bekijk ${collega} ${collega === 1 ? "taak" : "taken"} van collega's om op te pakken</button>` : "");
+    : "") + (collega ? ` <button type="button" class="knop link" id="team">Bekijk ${collega} ${collega === 1 ? "taak" : "taken"} van collega's om over te nemen</button>` : "");
 
   document.getElementById("taken").innerHTML = taken.length ? groepen.filter(([, l]) => l.length).map(([titel, l]) => `
     <section class="taken-groep"><h2>${titel} <span class="n ${titel === "Te laat" ? "rood" : ""}">${l.length}</span></h2>
@@ -110,9 +107,9 @@ document.addEventListener("click", e => {
   const o = orders.find(x => x.id === id);
   const taak = alleTaken().find(t => t.o === o && t.sleutel === sleutel);
   (o.opgepakt ??= {})[sleutel] = ik.naam;
-  o.log.push({ op: nu(), door: ik.naam, wat: `Taak opgepakt van ${taak.naam}: ${taak.kop}` });
+  o.log.push({ op: nu(), door: ik.naam, wat: `Taak overgenomen van ${taak.naam}: ${taak.kop}` });
   bewaar(orders);
-  toast(`Opgepakt. ${taak.naam} ziet in het logboek dat jij dit doet.`);
+  toast(`Overgenomen. ${taak.naam} ziet in het logboek dat jij dit doet.`);
   teken();
 });
 

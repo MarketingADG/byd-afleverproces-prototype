@@ -45,7 +45,7 @@
       <div class="midden">
         <div>
           <div class="datum">${o.afleverdatum ? lang(o.afleverdatum) : "Datum nog niet gepland"}</div>
-          ${o.aflevertijd ? `<div class="tijd">${o.aflevertijd.replace(":", ".")} uur</div>` : ""}
+          ${o.aflevertijd ? `<div class="tijd">${blokTekst(o.aflevertijd)} uur</div>` : ""}
         </div>
         <div class="meldcode"><div class="lbl">Meldcode</div><div class="code">${esc(meldcode(o) || "----")}</div></div>
       </div>

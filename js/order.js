@@ -1,7 +1,8 @@
 /* Orderdetail: één auto, één fase tegelijk. Kies de fase in de stappenbalk; elke fase is
    één checklist met dezelfde regel per punt. Rechts staan open punten, klantcontact en logboek.
    Een afgeronde fase blijft te herstellen door wie hem mag invullen; elke wijziging komt in
-   het logboek. */
+   het logboek. Een nieuwe order is een concept tot de verkoper fase 1 heeft ingevuld en op
+   Opslaan klikt. */
 
 const ik = kopbalk("");
 const orders = laadOrders();
@@ -14,8 +15,8 @@ if (params.get("nieuw")) {
   const nummer = String(Math.max(...orders.map(o => Number(o.id))) + 1);
   const verkoper = ik.rol === "verkoper" ? ik.naam : PERSONEN.find(p => p.rol === "verkoper").naam;
   orders.push({
-    id: nummer, ordernummer: "", type: "nieuw", voorraad: "winkel", verkoper, aangemaakt: nu(),
-    klant: {}, auto: { sleutel: "Verkocht" }, accessoires: [], vink: {}, contact: [], opmerkingen: [],
+    id: nummer, ordernummer: "", type: "nieuw", voorraad: "winkel", verkoper, aangemaakt: nu(), concept: true,
+    klant: {}, auto: {}, accessoires: [], vink: {}, contact: [], opmerkingen: [],
     log: [{ op: nu(), door: ik.naam, wat: "Order aangemaakt" }]
   });
   bewaar(orders);
@@ -77,6 +78,7 @@ function waardeTekst(p, w) {
   if (w === undefined || w === null || w === "") return "Nog niet ingevuld";
   if (p.soort === "datum") return datumKort(w);
   if (p.soort === "tijd") return w.replace(":", ".");
+  if (p.soort === "blok") return blokTekst(w);
   if (p.eenheid === "€") return bedrag(w);
   if (p.eenheid) return `${Number(w).toLocaleString("nl-NL")} ${p.eenheid}`;
   if (p.soort === "keuze") return p.opties[w] || w;
@@ -84,6 +86,10 @@ function waardeTekst(p, w) {
 }
 
 function puntHtml(p, mag) {
+  /* na de factuuraanvraag ligt de afleverdatum vast; wijzigen gaat via de administratie */
+  const vast = !!o.vink.factuur && ["afleverdatum", "aflevertijd"].includes(p.key);
+  const magWijzigen = mag && vast;
+  if (vast) mag = false;
   const klaar = puntKlaar(o, p);
   const id = `p_${p.key}`;
   const v = o.vink[p.key];
@@ -101,6 +107,13 @@ function puntHtml(p, mag) {
       const type = { getal: "number", datum: "date", tijd: "time" }[p.soort] || "text";
       ctl = mag
         ? `<input id="${id}" class="invoer ${p.soort === "tekst" ? "" : "half"}" type="${type}" data-pad="${p.pad}" data-soort="${p.soort}" ${dl} value="${esc(w ?? "")}">`
+        : `<span class="waarde">${esc(waardeTekst(p, w))}</span>`;
+      break;
+    }
+    case "blok": {
+      const w = lees(o, p.pad) ?? "";
+      ctl = mag
+        ? `<select id="${id}" class="invoer" data-pad="${p.pad}" ${dl}><option value="">Kies een blok</option>${Object.keys(AFLEVERBLOKKEN).map(k => `<option value="${k}" ${k === w ? "selected" : ""}>${blokTekst(k)}</option>`).join("")}</select>`
         : `<span class="waarde">${esc(waardeTekst(p, w))}</span>`;
       break;
     }
@@ -213,11 +226,24 @@ function puntHtml(p, mag) {
   }
 
   /* uitleg die van de rest van de order afhangt */
-  if (p.key === "afleverdatum" && vroegsteAflevering(o)) meta = `Vroegst ${datumKort(vroegsteAflevering(o))}: auto binnen plus 6 werkdagen klaarmaken plus 2 dagen.`;
-  if (p.key === "wp_deadline") meta = o.afleverdatum ? `${datumKort(wpDeadline(o))}, 2 werkdagen voor de aflevering. Dit is de datum die de werkplaatschef in zijn agenda ziet.` : "Volgt uit de afleverdatum.";
+  if (p.key === "afleverdatum" && !vast && !o.vink.binnen) meta = `Vroegst ${datumKort(vroegsteAflevering(o))}: binnen plus 6 werkdagen klaarmaken plus 2 dagen.`;
+  if (p.key === "afleverdatum" && vast) {
+    meta = `Bevestigd bij de factuuraanvraag. Wijzigen gaat via de administratie.`;
+    if (magWijzigen) {
+      breed = true;
+      onder = `<div class="wijziging">
+        <label class="vh" for="wijz_datum">Nieuwe afleverdatum</label><input id="wijz_datum" class="invoer half" type="date" value="${o.afleverdatum}">
+        <label class="vh" for="wijz_blok">Nieuw tijdsblok</label><select id="wijz_blok" class="invoer half">${Object.keys(AFLEVERBLOKKEN).map(k => `<option value="${k}" ${k === o.aflevertijd ? "selected" : ""}>${blokTekst(k)}</option>`).join("")}</select>
+        <button type="button" class="knop" id="wijz_sturen">Wijziging naar administratie</button></div>`;
+    }
+  }
+  if (p.key === "wp_deadline") {
+    const weekend = o.afleverdatum && wpDeadline(o) !== plusDagen(o.afleverdatum, -2);
+    meta = o.afleverdatum ? `${wpKlaarTekst(o)}, 48 uur voor de aflevering${weekend ? ". Dat valt in het weekend, dus de vrijdag ervoor" : ""}. Dit ziet de werkplaatschef in zijn agenda.` : "Volgt uit de afleverdatum.";
+  }
   if (p.key === "premie") {
     const pr = premieVoor(o.auto.model);
-    meta = !o.auto.model ? "Kies eerst een model." : pr ? `${bedrag(pr.bedrag)} voor de ${o.auto.model}, geldig tot en met ${datumKort(pr.tot)}.` : `Geen premie voor de ${o.auto.model} in de premielijst.`;
+    meta = !o.auto.model ? "Kies eerst een model." : pr ? `${bedrag(pr.bedrag)} voor de ${o.auto.model}${pr.code ? `, premiecode ${pr.code}` : ""}, geldig tot en met ${datumKort(pr.tot)}.` : `Geen premie voor de ${o.auto.model} in de premielijst.`;
   }
   if (p.key === "kenteken" && o.vink.kent_aangevraagd && !o.auto.kenteken) {
     const d = -dagenTot(o.vink.kent_aangevraagd.op.slice(0, 10));
@@ -235,7 +261,8 @@ function puntHtml(p, mag) {
 }
 
 function actieGeblokt(key) {
-  if (key === "factuur" && !(o.auto.kenteken && o.afleverdatum && o.aflevertijd)) return "Kan pas als kenteken, afleverdatum en tijd er zijn.";
+  if (key === "binnen" && !(o.afleverdatum && o.aflevertijd)) return "Plan eerst de afleverdatum en het tijdsblok. Die leg je vast bij binnenkomst.";
+  if (key === "factuur" && !(o.auto.kenteken && o.afleverdatum && o.aflevertijd)) return "Kan pas als kenteken, afleverdatum en tijdsblok er zijn.";
   if (key === "afgeleverd" && faseStatus(o, 3) !== "groen") return "Kan pas als fase 3 rond is: kenteken, afspraak en factuur.";
   return "";
 }
@@ -254,6 +281,7 @@ function faseHtml(f) {
   const pct = verplicht.length ? Math.round(gedaan / verplicht.length * 100) : 100;
 
   const m = [];
+  if (f.nr === 1 && o.concept) m.push(`<div class="melding oranje"><b>Concept.</b> Deze order staat nog niet in het overzicht. Vul alles in en klik onderaan op Opslaan.</div>`);
   if (status === "rood") m.push(`<div class="melding rood"><b>Te laat.</b> ${esc(waaromTeLaat(o, f.nr))}.</div>`);
   if (lopend(status) && !magRol) m.push(`<div class="melding">Deze fase is van ${esc(eigenaar)} (${ROLLEN[f.eigenaar].toLowerCase()}). Je kunt meelezen en rechts een open punt plaatsen.</div>`);
   if (o.heropend?.[f.nr]) m.push(`<div class="melding oranje">Heropend door ${esc(o.heropend[f.nr].door)}, ${tijdstip(o.heropend[f.nr].op)}.${magRol ? `<button type="button" class="knop" data-afronden="${f.nr}">Opnieuw afronden</button>` : ""}</div>`);
@@ -282,6 +310,12 @@ function faseHtml(f) {
       <label class="veld-lbl" for="afwijking">Afwijking melden</label>
       <textarea id="afwijking" class="invoer" placeholder="Bijvoorbeeld: trekhaak niet leverbaar, komt over drie weken"></textarea>
       <button type="button" class="knop" id="afwijking_melden">Melden aan verkoper en afleverspecialist</button></div>`;
+  if (f.nr === 1 && o.concept && mag) {
+    const open = openPunten(o, 1).length;
+    voet = `<div class="fase-voet">
+      <button type="button" class="knop donker ${open ? "uit" : ""}" id="opslaan" ${open ? 'aria-disabled="true"' : ""}>Opslaan</button>
+      <span>${open ? `Nog ${open} ${open === 1 ? "punt" : "punten"} open. Tot die tijd blijft de order een concept.` : "Alles ingevuld."}</span></div>`;
+  }
   if (f.nr === 3) voet = `<div class="fase-voet">
       <button type="button" class="knop" id="agenda" ${o.afleverdatum && o.aflevertijd ? "" : "disabled"}>Zet in agenda</button>
       <a class="knop" href="briefje.html?id=${o.id}" target="_blank">Print briefje voorruit</a></div>`;
@@ -352,24 +386,23 @@ function teken() {
   const scroll = window.scrollY;
   const nieuweFase = vorigeGekozen !== gekozen;
   vorigeGekozen = gekozen;
-  const sleutelMag = ["afleverspecialist", "poetser", "manager", "werkplaatschef"].includes(ik.rol);
+  const magVerwijderen = ik.rol === "manager" || (o.concept && ik.naam === o.verkoper);
   const feit = (dt, dd) => `<div><dt>${dt}</dt><dd>${dd}</dd></div>`;
   const stappen = FASES.filter(f => faseVanToepassing(o, f.nr));
 
   hoofd.innerHTML = `
     <div class="order-kop">
       <a class="terug" href="${startpagina(ik.rol)}">${icoon("pijl-links", 16)}${MENU[MENU_PER_ROL[ik.rol][0]][1]}</a>
-      <div class="order-titel"><h1>${esc(klantNaam(o))}</h1>${pil(status, klaar ? "Afgeleverd" : STATUS_TEKST[status])}</div>
+      <div class="order-titel"><h1>${esc(klantNaam(o))}</h1>${o.concept ? pil("grijs", "Concept") : pil(status, klaar ? "Afgeleverd" : STATUS_TEKST[status])}
+        ${magVerwijderen ? `<button type="button" class="knop link verwijder" id="verwijderen">${o.concept ? "Concept" : "Order"} verwijderen</button>` : ""}</div>
       <p class="order-sub">${esc(o.auto.model || "Model nog kiezen")} · ${TYPES[o.type]} · Order ${esc(o.ordernummer || "nog geen nummer")}</p>
       <dl class="feiten">
         ${feit("Verkoper", esc(o.verkoper))}
         ${feit("Levertijd", o.levertijd ? datumKort(o.levertijd) : "Nog invullen")}
         ${feit("Aflevering", o.afleverdatum ? datumKort(o.afleverdatum) + (o.aflevertijd ? ", " + o.aflevertijd.replace(":", ".") : "") : "Nog niet gepland")}
+        ${feit("Te betalen", o.te_betalen != null && o.te_betalen !== "" ? bedrag(o.te_betalen) : "Nog invullen")}
         ${feit("Mastercare", o.mastercare === true ? "Ja" : o.mastercare === false ? "Nee" : "Nog kiezen")}
         ${feit("Kenteken", esc(o.auto.kenteken || "Nog niet bekend"))}
-        ${sleutelMag
-          ? `<div><dt><label for="sleutel">Sleutel</label></dt><dd><select id="sleutel" class="invoer">${SLEUTELLOCATIES.map(s => `<option ${s === o.auto.sleutel ? "selected" : ""}>${s}</option>`).join("")}</select></dd></div>`
-          : feit("Sleutel", esc(o.auto.sleutel || "Onbekend"))}
       </dl>
       ${wis ? `<div class="melding">Klantgegevens gaan er op ${datumKort(wis)} uit, 30 dagen na aflevering. ${o.nps != null ? `NPS ${o.nps}, review ${o.review} van 5.` : `NPS en review komen vanaf ${datumKort(npsDatum(o))} binnen.`}</div>` : ""}
     </div>
@@ -390,8 +423,7 @@ function teken() {
 function agendaBestand() {
   const meldcode = o.auto.meldcode || (o.auto.chassis || "").slice(-4);
   const start = `${o.afleverdatum.replaceAll("-", "")}T${o.aflevertijd.replace(":", "")}00`;
-  const eindUur = String(Number(o.aflevertijd.slice(0, 2)) + 1).padStart(2, "0");
-  const eind = `${o.afleverdatum.replaceAll("-", "")}T${eindUur}${o.aflevertijd.slice(3, 5)}00`;
+  const eind = `${o.afleverdatum.replaceAll("-", "")}T${(AFLEVERBLOKKEN[o.aflevertijd] || o.aflevertijd).replace(":", "")}00`;
   const titel = `Afl. ${klantNaam(o)} BYD ${o.auto.model} #${meldcode}${o.type !== "nieuw" ? " (" + TYPES[o.type].toLowerCase() + ")" : ""}`;
   const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//ADG Groep//Afleverproces BYD//NL", "METHOD:PUBLISH", "BEGIN:VEVENT",
     `UID:aflevering-${o.id}@adggroep.nl`, `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").slice(0, 15)}Z`,
@@ -411,7 +443,7 @@ const ACTIE_MELDING = {
   team_info: () => `Melding met chassisnummer ${o.auto.chassis || "(nog leeg)"} naar het team in Groningen en Meppel.`,
   binnen: () => `Auto staat als binnen gemeld. De werkplaats kan ingepland worden.${o.type === "import" ? " De importlijst is bijgewerkt." : ""}`,
   kent_aangevraagd: () => "Kenteken-timer gestart. Verwacht binnen 1 tot 4 dagen.",
-  factuur: () => "Factuuraanvraag naar de administratie (Marieke Hoek).",
+  factuur: () => `Factuuraanvraag naar de administratie (Marieke Hoek), te betalen ${bedrag(o.te_betalen)}. De afleverdatum ligt nu vast.`,
   afgeleverd: () => "Aflevering afgerond. NPS volgt na 28 dagen, klantgegevens gaan er na 30 dagen uit."
 };
 
@@ -440,8 +472,6 @@ hoofd.addEventListener("change", e => {
   } else if (d.poets) {
     wijzig(() => { o.poets = { ...(o.poets || {}), [d.poets]: t.value }; }, "Poetser ingepland");
     if (d.poets === "datum" && t.value && dagenTot(t.value) < 1) toast("Minder dan 24 uur vooraf ingepland bij de poetser. Dat kost extra.");
-  } else if (t.id === "sleutel") {
-    wijzig(() => { o.auto.sleutel = t.value; }, `Sleutellocatie: ${t.value}`);
   }
 });
 
@@ -462,10 +492,9 @@ hoofd.addEventListener("click", e => {
   }
   if (d.actie) {
     if (actieGeblokt(d.actie)) { toast(actieGeblokt(d.actie)); return; }
-    wijzig(() => {
-      o.vink[d.actie] = { door: ik.naam, op: nu() };
-      if (d.actie === "afgeleverd") o.auto.sleutel = "Klant";
-    }, t.textContent);
+    if (d.actie === "factuur" && !confirm(`Klopt de afleverdatum: ${datumKort(o.afleverdatum)}, ${blokTekst(o.aflevertijd)}?\n\nNa de factuuraanvraag kun je hem alleen nog wijzigen via de administratie.`)) return;
+    wijzig(() => { o.vink[d.actie] = { door: ik.naam, op: nu() }; },
+      d.actie === "factuur" ? `Afleverdatum bevestigd (${datumKort(o.afleverdatum)}, ${blokTekst(o.aflevertijd)}) en factuur aangevraagd` : t.textContent);
     toast(ACTIE_MELDING[d.actie]?.() || `${t.textContent}.`);
     return;
   }
@@ -484,6 +513,28 @@ hoofd.addEventListener("click", e => {
     toast(`Melding naar ${o.verkoper} en Lisa Brouwer.`); return;
   }
   if (t.id === "agenda") agendaBestand();
+  if (t.id === "wijz_sturen") {
+    const datum = document.getElementById("wijz_datum").value, blok = document.getElementById("wijz_blok").value;
+    if (!datum) { toast("Kies de nieuwe afleverdatum."); return; }
+    if (datum === o.afleverdatum && blok === o.aflevertijd) { toast("Datum en tijdsblok zijn niet veranderd."); return; }
+    const van = `${datumKort(o.afleverdatum)}, ${blokTekst(o.aflevertijd)}`, naar = `${datumKort(datum)}, ${blokTekst(blok)}`;
+    wijzig(() => { o.afleverdatum = datum; o.aflevertijd = blok; }, `Wijziging afleverdatum naar de administratie: ${van} wordt ${naar}`);
+    toast(`Wijziging naar de administratie (Marieke Hoek): ${naar}. De werkplaats schuift mee.`);
+  }
+  if (t.id === "opslaan") {
+    const open = openPunten(o, 1);
+    if (open.length) { toast(`Nog open: ${open.slice(0, 3).map(p => eersteKlein(p.label)).join(", ")}${open.length > 3 ? ` en nog ${open.length - 3}` : ""}.`); return; }
+    wijzig(() => { delete o.concept; }, "Order opgeslagen");
+    toast("Opgeslagen. De order staat nu in het overzicht.", "groen");
+  }
+  if (t.id === "verwijderen") {
+    const wat = o.concept ? "het concept" : "de order";
+    if (!confirm(`Weet je zeker dat je ${wat} van ${klantNaam(o)} (${o.auto.model || "geen model"}) wilt verwijderen?${o.concept ? "" : " Doe dit alleen als de order is geannuleerd."}`)) return;
+    if (!confirm(`Echt verwijderen? ${o.concept ? "Het concept" : "De order"} en het logboek verdwijnen. Dit kun je niet terugdraaien.`)) return;
+    orders.splice(orders.indexOf(o), 1);
+    bewaar(orders);
+    location.href = startpagina(ik.rol);
+  }
   if (t.id === "log_meer") { heelLogboek = true; teken(); }
 });
 
@@ -505,16 +556,17 @@ hoofd.addEventListener("submit", e => {
     const timer = contactTimer(o);
     const veld = o.afleverdatum ? "afleverdatum" : "levertijd";
     const oud = o[veld];
+    const viaAdministratie = veld === "afleverdatum" && keuze === "nieuw" && !!o.vink.factuur;
     wijzig(() => {
       o.contact.push({ op: nu(), door: ik.naam, tekst, momenten: timer ? [timer.soort, ...(timer.soort === "drieweken" ? ["helft"] : [])] : [] });
       if (keuze === "nieuw") {
         o[veld] = nieuw;
-        o.log.push({ op: nu(), door: ik.naam, wat: `${veld === "afleverdatum" ? "Afleverdatum" : "Verwachte leverdatum"} na klantcontact: ${datumKort(oud)} wordt ${datumKort(nieuw)}` });
+        o.log.push({ op: nu(), door: ik.naam, wat: `${veld === "afleverdatum" ? "Afleverdatum" : "Verwachte leverdatum"} na klantcontact: ${datumKort(oud)} wordt ${datumKort(nieuw)}${viaAdministratie ? ". Wijziging naar de administratie" : ""}` });
       } else if (keuze === "blijft") {
         o.log.push({ op: nu(), door: ik.naam, wat: `Na klantcontact: ${datumKort(oud)} blijft staan` });
       }
     }, "Contactmoment vastgelegd");
-    toast(keuze === "nieuw" ? `Vastgelegd. Nieuwe verwachte datum: ${datumKort(nieuw)}.` : "Contactmoment vastgelegd.");
+    toast(keuze === "nieuw" ? `Vastgelegd. Nieuwe verwachte datum: ${datumKort(nieuw)}.${viaAdministratie ? " De factuur was al aangevraagd, dus de wijziging gaat naar de administratie." : ""}` : "Contactmoment vastgelegd.");
   }
 });
 

@@ -35,10 +35,12 @@ function kiesPersoon(naam) { try { localStorage.setItem("byd-afleverproces-perso
 function persoonVanRol(o, rol) { return rol === "verkoper" ? o.verkoper : PERSONEN.find(p => p.rol === rol)?.naam; }
 
 /* Wie mag een fase bewerken: de eigenaar, en de manager overal. Verkopers mogen ook
-   taken van de afleverspecialist doen (systeemuitleg, scherm Mijn taken). */
+   taken van de afleverspecialist doen (systeemuitleg, scherm Mijn taken); de
+   afleverspecialist neemt fase 3 en 5 over van de verkoper. */
 function magBewerken(persoon, o, nr) {
   const rol = faseInfo(nr).eigenaar;
   if (persoon.rol === "manager") return true;
+  if (faseInfo(nr).overname === persoon.rol) return true;
   if (rol === "verkoper") return persoon.rol === "verkoper";
   if (rol === "afleverspecialist") return persoon.rol === "afleverspecialist" || persoon.rol === "verkoper";
   return persoon.rol === rol;
@@ -97,9 +99,9 @@ function kopbalk(actief) {
   const ik = huidigePersoon();
   if (actief && !MENU_PER_ROL[ik.rol].includes(actief)) { location.replace(startpagina(ik.rol)); throw new Error("andere startpagina"); }
   const orders = laadOrders();
-  const lopend = orders.filter(o => huidigeFase(o) !== "klaar");
+  const lopend = orders.filter(o => !o.concept && huidigeFase(o) !== "klaar");
   const rood = lopend.filter(o => kaartStatus(o) === "rood").length;
-  const poetsOpen = orders.filter(o => o.poets?.datum && !o.poets.gedaan && !o.vink.afgeleverd).length;
+  const poetsOpen = orders.filter(o => teZienInPoetsplanning(o) && !gepoetst(o)).length;
   const tellers = {
     overzicht: rood ? `<span class="teller rood" title="${rood} te laat">${rood}</span>` : "",
     poetsen: poetsOpen ? `<span class="teller">${poetsOpen}</span>` : ""

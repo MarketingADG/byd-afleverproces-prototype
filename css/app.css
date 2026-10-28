@@ -492,3 +492,11 @@ details.opgelost .items{margin-top:10px}
   .stap{min-width:76px}
   .week-nav{width:100%}
 }
+
+/* ---------- concepten, wijziging afleverdatum, verwijderen ---------- */
+.concepten{margin-bottom:20px}
+.order-titel .verwijder{margin-left:auto}
+.wijziging{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#f_premie .form-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:760px){#f_premie .form-grid{grid-template-columns:1fr 1fr}}
+.poets-dag .dag-leeg{font-size:var(--t-klein)}

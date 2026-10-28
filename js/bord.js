@@ -3,7 +3,8 @@
    eerstvolgende bovenaan.
    1. Auto's onderweg: andere vestiging of nog besteld, op verwachte leverdatum.
    2. Auto's in het afleverproces: binnen, op afleverdatum, met een scheiding per dag.
-   3. Importauto's binnen zonder kenteken, op verwachte leverdatum. */
+   3. Importauto's binnen zonder kenteken, op verwachte leverdatum.
+   Concepten (fase 1 nog niet opgeslagen) staan erboven in een eigen strook. */
 
 const ik = kopbalk("overzicht");
 const orders = laadOrders();
@@ -15,10 +16,10 @@ if (ik.rol === "verkoper") fVerkoper.value = ik.naam;
 
 const HERKOMST = { "andere-locatie": "Andere vestiging", bestelling: "Bestelling", winkel: "Op voorraad" };
 const importVan = o => imports.find(i => i.chassis === o.auto.chassis);
-const uur = t => t ? ", " + t.replace(":", ".") : "";
+const uur = t => t ? ", " + blokTekst(t) : "";
 
 function rijVan(o) {
-  if (huidigeFase(o) === "klaar") return null;
+  if (o.concept || huidigeFase(o) === "klaar") return null;
   if (!o.vink.binnen) return 1;
   if (o.type === "import" && !o.auto.kenteken) return 3;
   return 2;
@@ -95,6 +96,17 @@ function teken() {
   const r1 = per(1).sort((a, b) => opDatum(a.levertijd, b.levertijd));
   const r2 = per(2).sort((a, b) => opDatum(a.afleverdatum, b.afleverdatum) || (a.aflevertijd || "").localeCompare(b.aflevertijd || ""));
   const r3 = per(3).sort((a, b) => opDatum(a.afleverdatum || a.levertijd, b.afleverdatum || b.levertijd));
+  const concepten = zichtbaar.filter(o => o.concept).sort((a, b) => b.aangemaakt.localeCompare(a.aangemaakt));
+
+  document.getElementById("concepten").innerHTML = concepten.length ? `<section class="taken-groep concepten">
+    <h2>Concepten <span class="n">${concepten.length}</span></h2>
+    <div class="rijen">${concepten.map(o => {
+      const open = openPunten(o, 1).length;
+      return `<a class="taak" href="order.html?id=${o.id}#fase-1"><span class="stip st-grijs"></span>
+        <div><div class="wie">${esc(klantNaam(o))}</div><div class="sub">${esc(o.auto.model || "Model nog kiezen")} · ${esc(o.verkoper)}</div></div>
+        <div class="wat"><div class="kop">${open ? `Nog ${open} ${open === 1 ? "punt" : "punten"} open` : "Klaar om op te slaan"}</div><div class="sub">Staat pas in het overzicht na Opslaan</div></div>
+        <div class="wanneer">Begonnen ${relatief(o.aangemaakt.slice(0, 10))}</div></a>`;
+    }).join("")}</div></section>` : "";
 
   let i = 0;
   const leeg = t => `<div class="kolom-leeg">${t}</div>`;
