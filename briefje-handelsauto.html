@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Briefje handelsauto · Afleverproces BYD Groningen</title>
+<link rel="stylesheet" href="css/huisstijl.css?v=20261028h">
+<style>
+  /* A4 staand, alleen zwart: scheelt inkt. Het logo gaat ook naar grijs. */
+  @page { size: A4 portrait; margin: 0; }
+  body { background: #e9e9ec; margin: 0; font-family: var(--font, "Sofia Pro", sans-serif); color: #000; }
+  .knoppen { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px; font-size: 14px; }
+  .knoppen button { background: #282830; color: #fff; border: none; border-radius: 8px; padding: 10px 16px; font: inherit; font-weight: 700; cursor: pointer; }
+  .vel { width: 210mm; height: 297mm; margin: 0 auto 24px; background: #fff; box-sizing: border-box; padding: 18mm 18mm 16mm; display: flex; flex-direction: column; }
+  .boven { display: flex; justify-content: space-between; align-items: center; border-bottom: 1.2mm solid #000; padding-bottom: 7mm; }
+  .boven img { height: 11mm; filter: grayscale(1) brightness(0); }
+  .boven .wat { font-size: 16pt; font-weight: 700; }
+  h1 { font-size: 66pt; font-weight: 800; letter-spacing: -.02em; line-height: 1; margin: 22mm 0 0; }
+  .plaat { margin-top: 14mm; border: 2.2mm solid #000; border-radius: 5mm; padding: 6mm 0; text-align: center; font-size: 92pt; font-weight: 800; letter-spacing: .03em; line-height: 1; }
+  .auto { margin-top: 12mm; font-size: 36pt; font-weight: 800; line-height: 1.15; }
+  .auto.leeg { font-size: 18pt; font-weight: 600; }
+  .onder { margin-top: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; border-top: 1px solid #000; padding-top: 7mm; }
+  .onder .lbl { font-size: 13pt; font-weight: 600; }
+  .onder .w { font-size: 26pt; font-weight: 800; margin-top: 1.5mm; }
+  @media print { body { background: #fff; } .knoppen { display: none; } .vel { margin: 0; } }
+</style>
+</head>
+<body>
+<div class="knoppen"><button onclick="print()">Opslaan als pdf of printen</button><span>Kies in het printvenster "Opslaan als pdf" om hem te downloaden.</span></div>
+<div id="vel"></div>
+<script src="js/proces.js?v=20261028h"></script>
+<script src="js/demo-data.js?v=20261028h"></script>
+<script src="js/ui.js?v=20261028h"></script>
+<script>
+  const o = laadOrders().find(x => x.id === new URLSearchParams(location.search).get("id"));
+  const lang = iso => { const d = naarDatum(iso); return `${d.getDate()} ${["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"][d.getMonth()]} ${d.getFullYear()}`; };
+
+  function teken(auto) {
+    const ingeleverd = o.vink.afgeleverd?.op.slice(0, 10);
+    document.getElementById("vel").innerHTML = `
+      <div class="vel">
+        <div class="boven"><img src="assets/adg-groep.svg" alt="ADG Groep"><span class="wat">Inruil</span></div>
+        <h1>Handelsauto</h1>
+        <div class="plaat">${esc(o.inruil.kenteken.toUpperCase())}</div>
+        ${auto ? `<div class="auto">${esc(auto.merk)} ${esc(auto.model || "")}</div>` : `<div class="auto leeg">Merk en model niet gevonden bij de RDW.</div>`}
+        <div class="onder">
+          <div><div class="lbl">Ingeleverd op</div><div class="w">${ingeleverd ? lang(ingeleverd) : "Nog niet afgeleverd"}</div></div>
+          <div><div class="lbl">Verkoper</div><div class="w">${esc(o.verkoper)}</div></div>
+        </div>
+      </div>`;
+  }
+
+  if (!o || !o.heeftInruil || !o.inruil?.kenteken) {
+    document.getElementById("vel").innerHTML = `<p style="text-align:center">Geen inruil gevonden bij deze order.</p>`;
+  } else if (o.inruil.merk) {
+    teken({ merk: o.inruil.merk, model: o.inruil.model });
+  } else {
+    /* nog niet opgehaald bij het invullen: nu alsnog bij de RDW */
+    document.getElementById("vel").innerHTML = `<p style="text-align:center">Merk en model ophalen bij de RDW...</p>`;
+    rdwAuto(o.inruil.kenteken).then(teken);
+  }
+</script>
+</body>
+</html>

@@ -20,7 +20,7 @@ function relatief(iso) {
   if (n === 0) return "vandaag"; if (n === 1) return "morgen"; if (n === -1) return "gisteren";
   return n > 0 ? `over ${n} dagen` : `${-n} dagen geleden`;
 }
-function initialen(naam) { return naam.split(" ").filter(w => /^[A-Z]/.test(w)).map(w => w[0]).join(""); }
+function initialen(naam) { return naam.split(" ").filter(w => /^\p{Lu}/u.test(w)).map(w => w[0]).join(""); }
 function eersteKlein(s) { return s ? s[0].toLowerCase() + s.slice(1) : ""; }
 function faseLabel(nr) { return nr === "ott" ? "5.1" : String(nr); }
 
@@ -64,6 +64,8 @@ const ICOON = {
   import: `<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>`,
   premie: `<path d="M17 6.5A6 6 0 1 0 17 17.5M4 10h9M4 14h9"/>`,
   archief: `<path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.5"/><path d="M4 4v4.5h4.5M12 8v4l3 2"/>`,
+  oog: `<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>`,
+  slot: `<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>`,
   bellen: `<path d="M5 4h3.5l2 5-2.5 1.5a11 11 0 0 0 5.5 5.5l1.5-2.5 5 2V19a2 2 0 0 1-2 2A17 17 0 0 1 3 6a2 2 0 0 1 2-2"/>`
 };
 function icoon(naam, maat = 18) {
@@ -72,7 +74,7 @@ function icoon(naam, maat = 18) {
 
 /* ---------- menu links ----------
    Elke afdeling heeft een eigen omgeving: verkoop en afleverspecialist het overzicht in drie
-   rijen, de werkplaatschef een weekagenda, de manager het dashboard. Kom je via "Bekijk als"
+   rijen, de serviceadviseur een weekagenda, de manager het dashboard. Kom je via "Bekijk als"
    op een pagina die niet bij jouw rol hoort, dan ga je naar je eigen startpagina. */
 
 const MENU = {
@@ -88,7 +90,7 @@ const MENU = {
 const MENU_PER_ROL = {
   verkoper: ["overzicht", "taken", "import", "poetsen"],
   afleverspecialist: ["overzicht", "taken", "import", "poetsen"],
-  werkplaatschef: ["werkplaats", "behandeld"],
+  serviceadviseur: ["werkplaats", "behandeld"],
   poetser: ["poetsen"],
   administratie: ["taken"],
   manager: ["dashboard", "overzicht", "werkplaats", "taken", "import", "premies", "poetsen"]
@@ -126,6 +128,20 @@ function kopbalk(actief) {
   zij.querySelector("#bekijk_als").addEventListener("change", e => kiesPersoon(e.target.value));
   zij.querySelector("#herstel").addEventListener("click", herstelDemo);
   return ik;
+}
+
+/* ---------- merk en model bij de RDW ----------
+   Open data, geen sleutel nodig. Geeft { merk, model } terug, of null als het kenteken
+   niet bestaat of de RDW niet bereikbaar is. */
+async function rdwAuto(kenteken) {
+  const k = String(kenteken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (k.length < 6) return null;
+  try {
+    const r = await fetch(`https://opendata.rdw.nl/resource/m9d7-ebf2.json?kenteken=${k}&$select=merk,handelsbenaming`);
+    const [auto] = await r.json();
+    /* de handelsbenaming herhaalt soms het merk: "TOYOTA COROLLA" */
+    return auto ? { merk: auto.merk, model: (auto.handelsbenaming || "").replace(new RegExp(`^${auto.merk} `), "") } : null;
+  } catch (e) { return null; }
 }
 
 /* ---------- melding rechtsonder ---------- */

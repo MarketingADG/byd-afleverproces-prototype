@@ -11,7 +11,7 @@ const WP_TAKEN = {
   wp_klaar: "WP-klaar gemeld",
   getankt: "Getankt"
 };
-const werkplaats = new Set(PERSONEN.filter(p => p.rol === "werkplaatschef").map(p => p.naam));
+const werkplaats = new Set(PERSONEN.filter(p => p.rol === "serviceadviseur").map(p => p.naam));
 
 function teken() {
   const gedaan = orders.filter(o => !o.vink.afgeleverd).flatMap(o =>

@@ -1,7 +1,8 @@
 /* ==========================================================================
    VOORBEELDDATA. Alleen voor het visuele prototype.
 
-   Alle namen, kentekens en nummers zijn verzonnen. Wijzigingen blijven bewaard in de
+   De medewerkers zijn de echte bezetting van BYD Groningen (verkopers uit de offertemodule),
+   behalve poetser en administratie. Klanten, kentekens en nummers zijn verzonnen. Wijzigingen blijven bewaard in de
    browser (localStorage) zodat je tussen pagina's kunt klikken; "Voorbeelddata
    herstellen" onderin zet alles terug. Zodra Supabase eraan hangt, verdwijnt dit
    bestand en komen laadOrders() en bewaar() uit de database.
@@ -10,19 +11,22 @@
    ========================================================================== */
 
 const PERSONEN = [
-  { naam: "Sanne Vos", rol: "verkoper" },
-  { naam: "Tim de Wit", rol: "verkoper" },
-  { naam: "Joost Kramer", rol: "verkoper" },
-  { naam: "Lisa Brouwer", rol: "afleverspecialist" },
-  { naam: "Henk Postma", rol: "werkplaatschef" },
+  { naam: "Carmen Kampstra", rol: "verkoper" },
+  { naam: "Ephrem Been", rol: "verkoper" },
+  { naam: "Ruben Maat", rol: "verkoper" },
+  { naam: "Ömer Yagci", rol: "verkoper" },
+  { naam: "Robert Dewnarain", rol: "verkoper" },
+  { naam: "Nils Bullinga", rol: "afleverspecialist" },
+  { naam: "Erwin Kraai", rol: "serviceadviseur" },
   { naam: "Erik Schut", rol: "poetser" },
   { naam: "Marieke Hoek", rol: "administratie" },
-  { naam: "Ruud Veenstra", rol: "manager" }
+  { naam: "Mark Jutstra", rol: "manager" }
 ];
 
-const OPSLAG = "byd-afleverproces-demo-v4";
+const OPSLAG = "byd-afleverproces-demo-v6";
 const OPSLAG_IMPORT = "byd-afleverproces-import-v1";
-const OPSLAG_PREMIE = "byd-afleverproces-premie-v2";
+const OPSLAG_PREMIE = "byd-afleverproces-premie-v3";
+const OPSLAG_PREMIESOORT = "byd-afleverproces-premiesoort-v1";
 
 function dag(n) { return plusDagen(naarIso(vandaag()), n); }
 function moment(n, tijd = "10:00") { return `${dag(n)}T${tijd}`; }
@@ -93,15 +97,15 @@ function maakDemo() {
   /* ---------- rij 1: onderweg ---------- */
 
   /* Concept: verkoper is nog bezig met fase 1, staat nog niet in het overzicht */
-  let o = basis({ id: "26000113", verkoper: "Sanne Vos", aangemaakt: -1, levertijd: 20,
+  let o = basis({ id: "26000113", verkoper: "Carmen Kampstra", aangemaakt: -1, levertijd: 20,
     klant: { aanhef: "Dhr.", naam: "Jansen" }, auto: { model: "ATTO 2", chassis: "" }, extra: { voorraad: "bestelling", concept: true } });
-  o.contact.push({ op: moment(-1, "15:20"), door: "Sanne Vos", tekst: "Klant gebeld na het tekenen, levertijd doorgegeven." });
+  o.contact.push({ op: moment(-1, "15:20"), door: "Carmen Kampstra", tekst: "Klant gebeld na het tekenen, levertijd doorgegeven." });
   orders.push(o);
 
   /* Bestelling, ver weg, onderdelen deels besteld: grijs */
-  o = basis({ id: "26000108", verkoper: "Tim de Wit", aangemaakt: -12, levertijd: 45,
+  o = basis({ id: "26000108", verkoper: "Ephrem Been", aangemaakt: -12, levertijd: 45,
     klant: { aanhef: "Mevr.", naam: "de Boer" }, auto: { model: "SEALION 7", chassis: "" },
-    extra: { voorraad: "bestelling", heeftInruil: true, inruil: { kenteken: "GX-482-T", boekwaarde: 8500 } } });
+    extra: { voorraad: "bestelling", heeftInruil: true, inruil: { kenteken: "GX-482-T", boekwaarde: 8500, merk: "TOYOTA", model: "YARIS", rdw: true } } });
   vulFases(o, [[1, -11]]);
   o.accessoires = [
     { naam: "Trekhaak, inclusief montage", besteld: true, verwacht: dag(20) },
@@ -111,26 +115,26 @@ function maakDemo() {
   orders.push(o);
 
   /* Andere vestiging, levertijd binnen 3 weken: oranje. Trekhaak komt te laat. */
-  o = basis({ id: "26000110", verkoper: "Joost Kramer", aangemaakt: -9, levertijd: 12,
+  o = basis({ id: "26000110", verkoper: "Ruben Maat", aangemaakt: -9, levertijd: 12,
     klant: { aanhef: "Dhr.", naam: "Mulder" }, auto: { model: "DOLPHIN SURF", chassis: "LGXC16C48S0034567" },
     extra: { voorraad: "andere-locatie", mastercare: false } });
   vulFases(o, [[1, -8]]);
   o.accessoires = [{ naam: "Trekhaak, inclusief montage", besteld: true, verwacht: dag(14) }];
-  o.vink.w_gecontroleerd = { door: "Henk Postma", op: moment(-7) };
-  o.opmerkingen.push({ id: 1, fase: 2, tekst: "Trekhaak pas over twee weken leverbaar bij de importeur.", open: true, auteur: "Henk Postma", op: moment(-6, "14:20") });
+  o.vink.w_gecontroleerd = { door: "Erwin Kraai", op: moment(-7) };
+  o.opmerkingen.push({ id: 1, fase: 2, tekst: "Trekhaak pas over twee weken leverbaar bij de importeur.", open: true, auteur: "Erwin Kraai", op: moment(-6, "14:20") });
   orders.push(o);
 
   /* Bestelling, 5 dagen over de verwachte leverdatum: rood */
-  o = basis({ id: "26000104", verkoper: "Sanne Vos", aangemaakt: -48, levertijd: -5,
+  o = basis({ id: "26000104", verkoper: "Carmen Kampstra", aangemaakt: -48, levertijd: -5,
     klant: { aanhef: "Mevr.", naam: "Meijer" }, auto: { model: "SEAL U DM-i", phev: true, chassis: "LGXCH6CD2S0061290" },
     extra: { voorraad: "bestelling" } });
   vulFases(o, [[1, -47], [2, -40]]);
-  o.contact.push({ op: moment(-24, "11:10"), door: "Sanne Vos", tekst: "Helft van de levertijd: klant bijgepraat, datum blijft staan.", momenten: ["helft"] });
-  o.contact.push({ op: moment(-20, "16:45"), door: "Lisa Brouwer", tekst: "3 weken voor levering gebeld, datum bevestigd.", momenten: ["drieweken"] });
+  o.contact.push({ op: moment(-24, "11:10"), door: "Carmen Kampstra", tekst: "Helft van de levertijd: klant bijgepraat, datum blijft staan.", momenten: ["helft"] });
+  o.contact.push({ op: moment(-20, "16:45"), door: "Nils Bullinga", tekst: "3 weken voor levering gebeld, datum bevestigd.", momenten: ["drieweken"] });
   orders.push(o);
 
   /* Import, verkocht, nog niet binnen */
-  o = basis({ id: "26000112", verkoper: "Tim de Wit", aangemaakt: -6, levertijd: 36,
+  o = basis({ id: "26000112", verkoper: "Ephrem Been", aangemaakt: -6, levertijd: 36,
     klant: { aanhef: "Dhr.", naam: "Wolters" }, auto: { model: "SEALION 7", chassis: "LGXCS7CD6S0099881" },
     extra: { type: "import", voorraad: null } });
   vulFases(o, [[1, -5]]);
@@ -139,103 +143,104 @@ function maakDemo() {
   /* ---------- rij 2: binnen, in het afleverproces ---------- */
 
   /* Gebruikt: binnen met kenteken, werkplaats moet nog onderdelen bekijken */
-  o = basis({ id: "26000111", verkoper: "Joost Kramer", aangemaakt: -3, levertijd: 14,
+  o = basis({ id: "26000111", verkoper: "Ruben Maat", aangemaakt: -3, levertijd: 14,
     klant: { aanhef: "Dhr.", naam: "Peters" }, auto: { model: "BYD ATTO 3, 2023", chassis: "LGXCE4CB2P0098765", kenteken: "S-381-KP" },
     extra: { type: "gebruikt", voorraad: null } });
   vulFases(o, [[1, -2]]);
-  o.vink.binnen = { door: "Lisa Brouwer", op: moment(-2, "11:00") };
-  o.contact.push({ op: moment(-2, "14:05"), door: "Joost Kramer", tekst: "Klant gebeld: auto staat binnen, afleverdatum volgt na de werkplaats." });
+  o.vink.binnen = { door: "Nils Bullinga", op: moment(-2, "11:00") };
+  o.contact.push({ op: moment(-2, "14:05"), door: "Ruben Maat", tekst: "Klant gebeld: auto staat binnen, afleverdatum volgt na de werkplaats." });
   orders.push(o);
 
   /* Nieuw van de winkel: binnen gemeld in hetzelfde scherm als fase 1 */
-  o = basis({ id: "26000114", verkoper: "Joost Kramer", aangemaakt: -2, levertijd: 12,
+  o = basis({ id: "26000114", verkoper: "Ruben Maat", aangemaakt: -2, levertijd: 12,
     klant: { aanhef: "Fam.", naam: "Kuipers" }, auto: { model: "DOLPHIN G", phev: true, chassis: "LGXCG2CB1S0040217" },
     extra: { afleverdatum: dag(9), aflevertijd: "13:00" } });
   vulFases(o, [[1, -2]]);
   orders.push(o);
 
   /* Auto binnen, kenteken aangevraagd, nog niet ingepland in de werkplaats */
-  o = basis({ id: "26000101", verkoper: "Sanne Vos", aangemaakt: -20, levertijd: 10,
+  o = basis({ id: "26000101", verkoper: "Carmen Kampstra", aangemaakt: -20, levertijd: 10,
     klant: { aanhef: "Mevr.", naam: "Visser" }, auto: { model: "SEAL U DM-i", phev: true, chassis: "LGXCH6CD5S0045678" },
     extra: { voorraad: "bestelling", afleverdatum: dag(9), aflevertijd: "14:30" } });
   vulFases(o, [[1, -19], [2, -15]]);
   o.werkorder = "WO-55120";
-  Object.assign(o.vink, { binnen: { door: "Lisa Brouwer", op: moment(-2) }, kent_aangevraagd: { door: "Lisa Brouwer", op: moment(-2, "10:30") } });
+  Object.assign(o.vink, { binnen: { door: "Nils Bullinga", op: moment(-2) }, kent_aangevraagd: { door: "Nils Bullinga", op: moment(-2, "10:30") } });
   o.verzekering = true;
-  o.contact.push({ op: moment(-5, "16:10"), door: "Sanne Vos", tekst: "Gebeld: auto is onderweg, klant blij met datum rond de 4e.", momenten: ["helft", "drieweken"] });
+  o.contact.push({ op: moment(-5, "16:10"), door: "Carmen Kampstra", tekst: "Gebeld: auto is onderweg, klant blij met datum rond de 4e.", momenten: ["helft", "drieweken"] });
   orders.push(o);
 
   /* Werkplaats ingepland, OTT loopt tegelijk */
-  o = basis({ id: "26000099", verkoper: "Joost Kramer", aangemaakt: -25, levertijd: 6,
+  o = basis({ id: "26000099", verkoper: "Ruben Maat", aangemaakt: -25, levertijd: 6,
     klant: { aanhef: "Dhr.", naam: "de Groot" }, auto: { model: "SEAL 6 DM-i", phev: true, chassis: "LGXCH4CD1S0067890", kenteken: "ZT-120-H" },
     extra: { voorraad: "andere-locatie", ott: true, ott_via: "Leasemaatschappij van de klant", afleverdatum: dag(6), aflevertijd: "09:30", werkorder: "WO-55107" } });
   o.accessoires = [{ naam: "Laadkabel mode 3", besteld: true, verwacht: dag(2) }];
   vulFases(o, [[1, -24], [2, -20], [3, -4]]);
   o.accessoires[0].binnen = false;
-  o.vink.wp_ingepland = { door: "Henk Postma", op: moment(-3) };
-  o.contact.push({ op: moment(-4, "09:50"), door: "Lisa Brouwer", tekst: "Afspraak bevestigd, klant komt met partner.", momenten: ["helft", "drieweken"] });
+  o.vink.wp_ingepland = { door: "Erwin Kraai", op: moment(-3) };
+  o.contact.push({ op: moment(-4, "09:50"), door: "Nils Bullinga", tekst: "Afspraak bevestigd, klant komt met partner.", momenten: ["helft", "drieweken"] });
   orders.push(o);
 
   /* Morgen aflevering, werkplaats nog niet helemaal klaar: rood */
-  o = basis({ id: "26000094", verkoper: "Sanne Vos", aangemaakt: -30, levertijd: 1,
+  o = basis({ id: "26000094", verkoper: "Carmen Kampstra", aangemaakt: -30, levertijd: 1,
     klant: { aanhef: "Mevr.", naam: "Bos" }, auto: { model: "DOLPHIN G", phev: true, chassis: "LGXCG2CB7S0023456", kenteken: "ZT-118-H" },
     extra: { afleverdatum: dag(1), aflevertijd: "16:00", werkorder: "WO-55101", opm_verkoop: "Klant is jarig op de dag van aflevering." } });
   vulFases(o, [[1, -29], [2, -22], [3, -6]]);
-  o.vink.wp_ingepland = { door: "Henk Postma", op: moment(-5) };
-  o.vink.wp_klaar = { door: "Henk Postma", op: moment(-1, "16:00") };
-  o.opmerkingen.push({ id: 2, fase: 4, tekst: "Laadkabel type 2 nog niet binnen, komt morgenochtend.", open: true, auteur: "Henk Postma", op: moment(-1, "16:05") });
-  o.contact.push({ op: moment(-3, "13:15"), door: "Lisa Brouwer", tekst: "Bevestigd: aflevering morgen tussen 16.00 en 17.30 uur.", momenten: ["helft", "drieweken"] });
+  o.vink.wp_ingepland = { door: "Erwin Kraai", op: moment(-5) };
+  o.vink.wp_klaar = { door: "Erwin Kraai", op: moment(-1, "16:00") };
+  o.opmerkingen.push({ id: 2, fase: 4, tekst: "Laadkabel type 2 nog niet binnen, komt morgenochtend.", open: true, auteur: "Erwin Kraai", op: moment(-1, "16:05") });
+  o.contact.push({ op: moment(-3, "13:15"), door: "Nils Bullinga", tekst: "Bevestigd: aflevering morgen tussen 16.00 en 17.30 uur.", momenten: ["helft", "drieweken"] });
   orders.push(o);
 
   /* WP-klaar, laadpaal was vol: nu volladen door de verkoop */
-  o = basis({ id: "26000092", verkoper: "Tim de Wit", aangemaakt: -35, levertijd: 3,
+  o = basis({ id: "26000092", verkoper: "Ephrem Been", aangemaakt: -35, levertijd: 3,
     klant: { aanhef: "Dhr.", naam: "Hendriks" }, auto: { model: "SEALION 7", chassis: "LGXCS7CD3S0078901", kenteken: "ZT-109-H" },
     extra: { ott: true, ott_via: "Financiering via de dealer", ott_code: "K7R2-94MX", afleverdatum: dag(3), aflevertijd: "11:00", werkorder: "WO-55093" } });
   o.geladen = "nee";
   vulFases(o, [[1, -34], [2, -28], [3, -9], [4, -1], ["ott", -2]]);
-  o.vink.w_gelezen = { door: "Lisa Brouwer", op: moment(0, "08:45") };
-  o.contact.push({ op: moment(-9, "15:00"), door: "Lisa Brouwer", tekst: "Afleverdatum afgestemd.", momenten: ["helft", "drieweken"] });
+  o.vink.w_gelezen = { door: "Nils Bullinga", op: moment(0, "08:45") };
+  o.contact.push({ op: moment(-9, "15:00"), door: "Nils Bullinga", tekst: "Afleverdatum afgestemd.", momenten: ["helft", "drieweken"] });
   orders.push(o);
 
   /* Morgen aflevering, volgeladen, poetsen vandaag */
-  o = basis({ id: "26000090", verkoper: "Joost Kramer", aangemaakt: -28, levertijd: 1,
+  o = basis({ id: "26000090", verkoper: "Ruben Maat", aangemaakt: -28, levertijd: 1,
     klant: { aanhef: "Mevr.", naam: "Dekker" }, auto: { model: "ATTO 2 DM-i", phev: true, chassis: "LGXCA2CD9S0089012", kenteken: "ZT-104-H", km: 12 },
     extra: { afleverdatum: dag(1), aflevertijd: "09:30", werkorder: "WO-55090" } });
   o.geladen = "nee";
   vulFases(o, [[1, -27], [2, -21], [3, -8], [4, -2]]);
-  Object.assign(o.vink, { w_gelezen: { door: "Lisa Brouwer", op: moment(-1) }, volgeladen: { door: "Lisa Brouwer", op: moment(-1, "16:30") } });
+  Object.assign(o.vink, { w_gelezen: { door: "Nils Bullinga", op: moment(-1) }, volgeladen: { door: "Nils Bullinga", op: moment(-1, "16:30") } });
   o.poets = { datum: dag(0), vorm: "Mastercare", gedaan: false };
-  o.contact.push({ op: moment(-6, "10:20"), door: "Lisa Brouwer", tekst: "Klant gebeld, morgen tussen 9.30 en 11.00 uur bevestigd.", momenten: ["helft", "drieweken"] });
+  o.contact.push({ op: moment(-6, "10:20"), door: "Nils Bullinga", tekst: "Klant gebeld, morgen tussen 9.30 en 11.00 uur bevestigd.", momenten: ["helft", "drieweken"] });
   orders.push(o);
 
   /* ---------- rij 3: import, binnen, nog geen kenteken ---------- */
 
-  o = basis({ id: "26000096", verkoper: "Tim de Wit", aangemaakt: -40, levertijd: 8,
+  o = basis({ id: "26000096", verkoper: "Ephrem Been", aangemaakt: -40, levertijd: 8,
     klant: { aanhef: "Dhr.", naam: "Smit" }, auto: { model: "ATTO 3 EVO", chassis: "LGXCE4CB0S0011223" },
     extra: { type: "import", voorraad: null, afleverdatum: dag(8), aflevertijd: "11:00", werkorder: "WO-55098" } });
   vulFases(o, [[1, -39], [2, -30]]);
-  o.vink.binnen = { door: "Lisa Brouwer", op: moment(-8) };
-  o.vink.wp_ingepland = { door: "Henk Postma", op: moment(-6) };
+  o.vink.binnen = { door: "Nils Bullinga", op: moment(-8) };
+  o.vink.wp_ingepland = { door: "Erwin Kraai", op: moment(-6) };
   o.verzekering = false;
-  o.contact.push({ op: moment(-12, "11:40"), door: "Lisa Brouwer", tekst: "Klant gebeld, uitgelegd dat het kenteken bij import langer duurt.", momenten: ["helft"] });
+  o.contact.push({ op: moment(-12, "11:40"), door: "Nils Bullinga", tekst: "Klant gebeld, uitgelegd dat het kenteken bij import langer duurt.", momenten: ["helft"] });
   orders.push(o);
 
-  o = basis({ id: "26000107", verkoper: "Sanne Vos", aangemaakt: -14, levertijd: 25,
+  o = basis({ id: "26000107", verkoper: "Carmen Kampstra", aangemaakt: -14, levertijd: 25,
     klant: { aanhef: "Mevr.", naam: "Bakker" }, auto: { model: "SEAL U DM-i", phev: true, chassis: "LGXCH6CD8S0071234" },
     extra: { type: "import", voorraad: null } });
   vulFases(o, [[1, -13]]);
-  o.vink.binnen = { door: "Lisa Brouwer", op: moment(-3) };
+  o.vink.binnen = { door: "Nils Bullinga", op: moment(-3) };
   orders.push(o);
 
   /* ---------- afgeleverd ---------- */
 
-  o = basis({ id: "26000081", verkoper: "Sanne Vos", aangemaakt: -45, levertijd: -10,
+  o = basis({ id: "26000081", verkoper: "Carmen Kampstra", aangemaakt: -45, levertijd: -10,
     klant: { aanhef: "Dhr.", naam: "van Dijk" }, auto: { model: "SEAL U", chassis: "LGXCH6CD1R0056789", kenteken: "ZS-990-G", km: 14 },
-    extra: { afleverdatum: dag(-10), aflevertijd: "13:00", werkorder: "WO-55071" } });
+    extra: { afleverdatum: dag(-10), aflevertijd: "13:00", werkorder: "WO-55071",
+      heeftInruil: true, inruil: { kenteken: "HN-215-V", boekwaarde: 6250, merk: "VOLKSWAGEN", model: "POLO", rdw: true } } });
   vulFases(o, [[1, -44], [2, -38], [3, -20], [4, -13], [5, -10]]);
   orders.push(o);
 
-  o = basis({ id: "26000074", verkoper: "Tim de Wit", aangemaakt: -60, levertijd: -29,
+  o = basis({ id: "26000074", verkoper: "Ephrem Been", aangemaakt: -60, levertijd: -29,
     klant: { aanhef: "Mevr.", naam: "Kok" }, auto: { model: "DOLPHIN SURF", chassis: "LGXC16C41R0023412", kenteken: "ZS-912-G", km: 9 },
     extra: { afleverdatum: dag(-29), aflevertijd: "16:00", werkorder: "WO-55052", nps: 9, review: 5 } });
   vulFases(o, [[1, -59], [2, -50], [3, -38], [4, -32], [5, -29]]);
@@ -272,30 +277,39 @@ function historie() {
 /* De importlijst: elke auto die geïmporteerd wordt, verkocht of niet. Een verkochte auto
    hoort bij een order met hetzelfde chassisnummer. */
 function maakImports() {
-  const st = (...dagen) => Object.fromEntries(dagen.map((d, i) => [i, { door: "Lisa Brouwer", op: moment(d) }]));
+  const st = (...dagen) => Object.fromEntries(dagen.map((d, i) => [i, { door: "Nils Bullinga", op: moment(d) }]));
   return [
     { chassis: "LGXCE4CB0S0011223", merk: "BYD", model: "ATTO 3 EVO", uitvoering: "Design", kleur_ext: "Surf Blue", kleur_int: "Zwart", bouwjaar: 2025, km: 120,
-      toegevoegd: { door: "Tim de Wit", op: moment(-41) }, stappen: st(-8, -8, -5, -2) },
+      toegevoegd: { door: "Ephrem Been", op: moment(-41) }, stappen: st(-8, -8, -5, -2) },
     { chassis: "LGXCH6CD8S0071234", merk: "BYD", model: "SEAL U DM-i", uitvoering: "Design", kleur_ext: "Arctic White", kleur_int: "Grijs", bouwjaar: 2025, km: 85,
-      toegevoegd: { door: "Sanne Vos", op: moment(-15) }, stappen: st(-3, -3) },
+      toegevoegd: { door: "Carmen Kampstra", op: moment(-15) }, stappen: st(-3, -3) },
     { chassis: "LGXCS7CD6S0099881", merk: "BYD", model: "SEALION 7", uitvoering: "Excellence AWD", kleur_ext: "Atlantis Grey", kleur_int: "Bruin", bouwjaar: 2025, km: 40,
-      toegevoegd: { door: "Tim de Wit", op: moment(-7) }, stappen: {} },
+      toegevoegd: { door: "Ephrem Been", op: moment(-7) }, stappen: {} },
     { chassis: "5YJ3E7EB4NF208114", merk: "Tesla", model: "Model 3", uitvoering: "Long Range AWD", kleur_ext: "Pearl White", kleur_int: "Zwart", bouwjaar: 2022, km: 48210,
-      toegevoegd: { door: "Joost Kramer", op: moment(-30) }, stappen: st(-21, -21, -16, -12, -9, -4) },
+      toegevoegd: { door: "Ruben Maat", op: moment(-30) }, stappen: st(-21, -21, -16, -12, -9, -4) },
     { chassis: "LGXC76C43R0015530", merk: "BYD", model: "DOLPHIN", uitvoering: "Comfort", kleur_ext: "Coral Pink", kleur_int: "Grijs", bouwjaar: 2024, km: 6300,
-      toegevoegd: { door: "Sanne Vos", op: moment(-2) }, stappen: {} },
+      toegevoegd: { door: "Carmen Kampstra", op: moment(-2) }, stappen: {} },
     { chassis: "WVGZZZE2ZPP031877", merk: "Volkswagen", model: "ID.4", uitvoering: "Pro 77 kWh", kleur_ext: "Moonstone Grey", kleur_int: "Zwart", bouwjaar: 2023, km: 31540,
-      toegevoegd: { door: "Joost Kramer", op: moment(-44) }, stappen: st(-36, -36, -30, -25, -22, -17, -12), kenteken: "ZV-317-K" }
+      toegevoegd: { door: "Ruben Maat", op: moment(-44) }, stappen: st(-36, -36, -30, -25, -22, -17, -12), kenteken: "ZV-317-K" }
   ];
 }
 
-/* Inruilpremies per model. De manager houdt deze lijst bij. Voorbeeldbedragen en -codes, niet de echte. */
+/* Premies per model en premiesoort. De manager houdt deze lijst bij, de verkoper kiest er in
+   fase 1 één uit. Voorbeeldbedragen en -codes, niet de echte. */
+function maakPremiesoorten() { return ["Inruilpremie", "ADG lease premie", "Unilease"]; }
 function maakPremies() {
+  const p = (id, model, soort, bedrag, code) => ({ id, model, soort, bedrag, code, tot: dag(33) });
   return [
-    { model: "DOLPHIN SURF", bedrag: 1000, code: "VB-DS-1000", tot: dag(33) },
-    { model: "ATTO 2", bedrag: 1500, code: "VB-A2-1500", tot: dag(33) },
-    { model: "SEAL U DM-i", bedrag: 2000, code: "VB-SUD-2000", tot: dag(33) },
-    { model: "SEALION 7", bedrag: 2500, code: "VB-S7-2500", tot: dag(33) }
+    p("p1", "DOLPHIN SURF", "Inruilpremie", 1000, "VB-DS-INR"),
+    p("p2", "ATTO 2", "Inruilpremie", 1500, "VB-A2-INR"),
+    p("p3", "ATTO 2", "ADG lease premie", 1000, "VB-A2-ADG"),
+    p("p4", "ATTO 2 DM-i", "Inruilpremie", 1500, "VB-A2D-INR"),
+    p("p5", "ATTO 2 DM-i", "ADG lease premie", 1250, "VB-A2D-ADG"),
+    p("p6", "ATTO 2 DM-i", "Unilease", 750, "VB-A2D-UNI"),
+    p("p7", "SEAL U DM-i", "Inruilpremie", 2000, "VB-SUD-INR"),
+    p("p8", "SEAL U DM-i", "Unilease", 1000, "VB-SUD-UNI"),
+    p("p9", "SEALION 7", "Inruilpremie", 2500, "VB-S7-INR"),
+    p("p10", "SEALION 7", "ADG lease premie", 2000, "VB-S7-ADG")
   ];
 }
 
@@ -317,5 +331,12 @@ function laadImports() { return lees_(OPSLAG_IMPORT, maakImports); }
 function bewaarImports(imports) { schrijf_(OPSLAG_IMPORT, imports); }
 function laadPremies() { return lees_(OPSLAG_PREMIE, maakPremies); }
 function bewaarPremies(p) { schrijf_(OPSLAG_PREMIE, p); }
-function premieVoor(model) { return laadPremies().find(p => p.model === model && (!p.tot || dagenTot(p.tot) >= 0)); }
-function herstelDemo() { try { [OPSLAG, OPSLAG_IMPORT, OPSLAG_PREMIE].forEach(k => localStorage.removeItem(k)); } catch (e) { } location.reload(); }
+function laadPremiesoorten() { return lees_(OPSLAG_PREMIESOORT, maakPremiesoorten); }
+function bewaarPremiesoorten(s) { schrijf_(OPSLAG_PREMIESOORT, s); }
+/* de premies die nu gelden voor een model, in de volgorde van de premiesoorten */
+function premiesVoor(model) {
+  const soorten = laadPremiesoorten();
+  return laadPremies().filter(p => p.model === model && (!p.tot || dagenTot(p.tot) >= 0))
+    .sort((a, b) => soorten.indexOf(a.soort) - soorten.indexOf(b.soort));
+}
+function herstelDemo() { try { [OPSLAG, OPSLAG_IMPORT, OPSLAG_PREMIE, OPSLAG_PREMIESOORT].forEach(k => localStorage.removeItem(k)); } catch (e) { } location.reload(); }

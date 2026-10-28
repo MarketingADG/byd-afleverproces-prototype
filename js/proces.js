@@ -10,7 +10,7 @@
 const ROLLEN = {
   verkoper: "Verkoper",
   afleverspecialist: "Afleverspecialist",
-  werkplaatschef: "Werkplaatschef",
+  serviceadviseur: "Serviceadviseur",
   poetser: "Poetser",
   administratie: "Administratie",
   manager: "Manager"
@@ -41,9 +41,9 @@ function volGeladen(o) { return o.geladen === "ja" || !!o.vink?.volgeladen; }
    verkoper; de afleverspecialist kan ze overnemen (`overname`). */
 const FASES = [
   { nr: 1, naam: "Verkoop", eigenaar: "verkoper" },
-  { nr: 2, naam: "Onderdelen", eigenaar: "werkplaatschef" },
+  { nr: 2, naam: "Onderdelen", eigenaar: "serviceadviseur" },
   { nr: 3, naam: "Auto binnen", eigenaar: "verkoper", overname: "afleverspecialist" },
-  { nr: 4, naam: "Werkplaats", eigenaar: "werkplaatschef" },
+  { nr: 4, naam: "Werkplaats", eigenaar: "serviceadviseur" },
   { nr: "ott", naam: "OTT-code", eigenaar: "afleverspecialist" },
   { nr: 5, naam: "Aflevering", eigenaar: "verkoper", overname: "afleverspecialist" }
 ];
@@ -133,9 +133,9 @@ function puntenVoor(o, nr) {
       afspraak("Auto");
       add("Auto", { key: "binnen", label: "Auto binnen gemeld", soort: "actie", knop: "Auto is binnen", hint: "Staat al op de vestiging, dus meteen binnen melden" });
     }
-    add("Auto", { key: "acc_info", label: "Accessoires", soort: "info", tekst: "Vult de werkplaatschef in bij fase 2.", verplicht: false });
+    add("Auto", { key: "acc_info", label: "Accessoires", soort: "info", tekst: "Vult de serviceadviseur in bij fase 2.", verplicht: false });
 
-    if (nieuw) add("Premie en deal", { key: "premie", label: "Inruilpremie excl. dealerbijdrage", soort: "info", tekst: "Uit de premielijst van de manager.", verplicht: false });
+    if (nieuw) add("Premie en deal", { key: "premie", label: "Premie", soort: "premiekeuze", pad: "premie.id", verplicht: false });
     add("Premie en deal", { key: "deal", label: "Speciale deal", soort: "janee", pad: "heeftDeal", verplicht: false, hint: "Eigen afspraak met de klant, buiten de premielijst" });
     if (o.heeftDeal) {
       add("Premie en deal", { key: "deal_oms", label: "Omschrijving deal", soort: "tekst", pad: "deal.omschrijving" });
@@ -189,7 +189,7 @@ function puntenVoor(o, nr) {
   if (nr === 5) {
     add("Voorbereiding", { key: "w_gelezen", label: "Opmerkingen werkplaats gelezen en open punten opgelost", soort: "vink" });
     if (o.geladen === "ja") add("Voorbereiding", { key: "volgeladen_info", label: "Auto volgeladen", soort: "info", tekst: "Geladen door de werkplaats.", verplicht: false });
-    else add("Voorbereiding", { key: "volgeladen", label: "Auto volladen", soort: "vink", hint: "De werkplaats kon niet laden, laadpaal was vol" });
+    else add("Voorbereiding", { key: "volgeladen", label: "Auto volladen", soort: "vink", hint: o.geladen === "nee" ? "De werkplaats kon niet laden, laadpaal was vol" : "" });
     add("Voorbereiding", { key: "poets", label: "Ingepland bij de poetser", soort: "poets", hint: "Minimaal 24 uur vooraf, anders extra kosten" });
     add("Voorbereiding", { key: "showroom", label: "Gepoetst in de showroom. Check: schoon, kabels, accessoires, mastercare, calamiteitenpakket, kenteken op de auto", soort: "vink" });
     add("Voorbereiding", { key: "km", label: "Kilometerstand", soort: "getal", pad: "auto.km", eenheid: "km" });
@@ -207,7 +207,8 @@ function puntKlaar(o, punt) {
   if (punt.soort === "vink" || punt.soort === "actie" || punt.soort === "upload") return !!o.vink?.[punt.key];
   if (punt.soort === "janee") return typeof lees(o, punt.pad) === "boolean";
   if (punt.soort === "onderdelen") return (o.accessoires || []).every(a => a.besteld && a.verwacht);
-  if (punt.soort === "poets") return !!o.poets?.datum;
+  /* een poetsbeurt na de aflevering telt niet als ingepland */
+  if (punt.soort === "poets") return !!o.poets?.datum && !(o.afleverdatum && o.poets.datum > o.afleverdatum);
   if (punt.soort === "import") return !!o.auto?.kenteken;
   const v = lees(o, punt.pad);
   return v !== undefined && v !== null && String(v).trim() !== "";
@@ -237,6 +238,25 @@ function faseStatus(o, nr) {
   /* een fase die een manager heeft heropend, telt als lopend tot de eigenaar hem opnieuw afrondt */
   if (!o.heropend?.[nr] && openPunten(o, nr).length === 0) return "groen";
   return faseTeLaat(o, nr) ? "rood" : "oranje";
+}
+
+/* Waarom een fase nog op slot zit (grijs), in woorden voor op het scherm. */
+function waaromOpSlot(o, nr) {
+  const open = v => !["groen", "nvt"].includes(faseStatus(o, v));
+  if (o.concept) return ["De order is nog een concept."];
+  const r = [];
+  if (nr === 2 || nr === 3) r.push("De verkoop heeft fase 1 nog niet afgerond.");
+  if (nr === 4) {
+    if (open(2)) r.push("De onderdelen zijn nog niet geregeld.");
+    if (!o.vink?.binnen) r.push("De auto is nog niet binnen.");
+  }
+  if (nr === "ott") r.push("Fase 3 is nog niet rond: auto binnen, kenteken en afspraak met de klant.");
+  if (nr === 5) {
+    if (!o.vink?.binnen) r.push("De auto is nog niet binnen.");
+    else if (open(4)) r.push("De auto is nog in de werkplaats.");
+    if (o.ott && open("ott")) r.push("De OTT-code is er nog niet.");
+  }
+  return r;
 }
 
 /* Wanneer staat een lopende fase op rood? De deadlines uit de tabel "Timers en meldingen". */
@@ -318,7 +338,7 @@ function onderwegKleur(o) {
 
 /* ---------- werkplaats ---------- */
 
-/* De werkplaatschef ziet niet de afleverdatum, maar het moment waarop de auto klaar moet zijn:
+/* De serviceadviseur ziet niet de afleverdatum, maar het moment waarop de auto klaar moet zijn:
    48 uur vóór de aflevering, op dezelfde tijd. Valt dat in het weekend, dan de vrijdag
    ervoor (aanname, nog navragen: is de werkplaats op zaterdag open?). */
 function wpDeadline(o) {
@@ -357,7 +377,7 @@ function verkoopDelen(o) {
     { nr: 1, label: "Kenteken toevoegen", klaar: !!o.auto?.kenteken, open: !!v.binnen },
     { nr: 2, label: "Afleverdatum bevestigen, factuur aanvragen", klaar: !!v.factuur, open: !!o.auto?.kenteken },
     { nr: 3, label: "Auto volladen", klaar: volGeladen(o), open: !!v.wp_klaar && o.geladen === "nee" },
-    { nr: 4, label: "Inplannen bij de poetser", klaar: !!o.poets?.datum, open: volGeladen(o) },
+    { nr: 4, label: "Inplannen bij de poetser", klaar: !!o.poets?.datum && !(o.afleverdatum && o.poets.datum > o.afleverdatum), open: volGeladen(o) },
     { nr: 5, label: "Gepoetst in de showroom", klaar: !!v.showroom, open: !!o.poets?.datum }
   ];
   /* de import regelt deel 1 zelf via de importlijst */

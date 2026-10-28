@@ -179,7 +179,7 @@ function puntHtml(p, mag) {
       breed = true;
       const grens = wpDeadline(o) || (o.levertijd && plusDagen(o.levertijd, -2));
       if (grens && o.accessoires.some(a => a.verwacht > grens))
-        metaRood = `Een onderdeel komt pas na ${datumKort(grens)} binnen, de dag dat de werkplaats klaar moet zijn. Werkplaatschef en afleverspecialist krijgen een melding.`;
+        metaRood = `Een onderdeel komt pas na ${datumKort(grens)} binnen, de dag dat de werkplaats klaar moet zijn. Serviceadviseur en afleverspecialist krijgen een melding.`;
       const vak = (a, i, veld, naam) => mag
         ? `<label><input type="checkbox" data-acc="${i}" data-veld="${veld}" ${a[veld] ? "checked" : ""}><span class="vh">${naam}: ${esc(a.naam)}</span></label>`
         : (a[veld] ? "Ja" : "Nee");
@@ -203,6 +203,23 @@ function puntHtml(p, mag) {
       breed = mag;
       break;
     }
+    case "premiekeuze": {
+      /* de gekozen premie wordt met bedrag en code in de order vastgelegd, zodat een latere
+         wijziging in de premielijst een verkochte auto niet meer raakt */
+      const keus = o.premie;
+      const lijst = o.auto.model ? premiesVoor(o.auto.model) : [];
+      const tekst = x => `${x.soort}, ${bedrag(x.bedrag)}`;
+      if (!o.auto.model) { meta = "Kies eerst een model."; labelFor = false; break; }
+      if (keus?.id === "geen") meta = "De klant krijgt geen premie uit de premielijst.";
+      else if (keus) meta = `Premiecode ${keus.code}${keus.tot ? `, geldig tot en met ${datumKort(keus.tot)}` : ""}.`;
+      else meta = lijst.length ? `Optioneel. ${lijst.length} ${lijst.length === 1 ? "premie" : "premies"} voor de ${o.auto.model} in de premielijst van de manager.` : `Geen premie voor de ${o.auto.model} in de premielijst.`;
+      if (!mag) { ctl = `<span class="waarde">${esc(keus?.id === "geen" ? "Geen premie" : keus ? tekst(keus) : "Nog niet gekozen")}</span>`; break; }
+      if (!lijst.length && !keus) { labelFor = false; break; }
+      const opties = [...lijst];
+      if (keus && keus.id !== "geen" && !opties.some(x => x.id === keus.id)) opties.unshift(keus);
+      ctl = `<select id="${id}" class="invoer" data-premie="1" ${dl}><option value="">Kies een premie</option>${opties.map(x => `<option value="${esc(x.id)}" ${x.id === keus?.id ? "selected" : ""}>${esc(tekst(x))}</option>`).join("")}<option value="geen" ${keus?.id === "geen" ? "selected" : ""}>Geen premie</option></select>`;
+      break;
+    }
     case "import": {
       labelFor = false;
       const imp = laadImports().find(i => i.chassis === o.auto.chassis);
@@ -216,6 +233,7 @@ function puntHtml(p, mag) {
       const pt = o.poets || {};
       const vorm = pt.vorm || (o.mastercare ? "Mastercare" : "Standaard");
       if (pt.gedaan) meta = `Gepoetst. ${vorm}, ${datumKort(pt.datum)}.`;
+      else if (pt.datum && o.afleverdatum && pt.datum > o.afleverdatum) metaRood = `De poetsbeurt staat na de aflevering van ${datumKort(o.afleverdatum)}. Plan hem eerder in.`;
       else if (pt.datum && dagenTot(pt.datum) < 1) metaRood = "Minder dan 24 uur van tevoren ingepland. Dat kost extra.";
       ctl = mag
         ? `<label class="vh" for="${id}">Poetsdatum</label><input id="${id}" class="invoer half" type="date" data-poets="datum" value="${pt.datum || ""}">
@@ -239,11 +257,11 @@ function puntHtml(p, mag) {
   }
   if (p.key === "wp_deadline") {
     const weekend = o.afleverdatum && wpDeadline(o) !== plusDagen(o.afleverdatum, -2);
-    meta = o.afleverdatum ? `${wpKlaarTekst(o)}, 48 uur voor de aflevering${weekend ? ". Dat valt in het weekend, dus de vrijdag ervoor" : ""}. Dit ziet de werkplaatschef in zijn agenda.` : "Volgt uit de afleverdatum.";
+    meta = o.afleverdatum ? `${wpKlaarTekst(o)}, 48 uur voor de aflevering${weekend ? ". Dat valt in het weekend, dus de vrijdag ervoor" : ""}. Dit ziet de serviceadviseur in zijn agenda.` : "Volgt uit de afleverdatum.";
   }
-  if (p.key === "premie") {
-    const pr = premieVoor(o.auto.model);
-    meta = !o.auto.model ? "Kies eerst een model." : pr ? `${bedrag(pr.bedrag)} voor de ${o.auto.model}${pr.code ? `, premiecode ${pr.code}` : ""}, geldig tot en met ${datumKort(pr.tot)}.` : `Geen premie voor de ${o.auto.model} in de premielijst.`;
+  if (p.key === "i_kenteken" && o.inruil?.kenteken) {
+    if (o.inruil.merk) meta = `RDW: ${o.inruil.merk} ${o.inruil.model || ""}`.trim();
+    else if (o.inruil.rdw === false) metaRood = "Niet gevonden bij de RDW. Controleer het kenteken.";
   }
   if (p.key === "kenteken" && o.vink.kent_aangevraagd && !o.auto.kenteken) {
     const d = -dagenTot(o.vink.kent_aangevraagd.op.slice(0, 10));
@@ -251,6 +269,8 @@ function puntHtml(p, mag) {
     if (d > 4) metaRood = `${t} Normaal duurt het 1 tot 4 dagen.`; else meta = t;
   }
 
+  /* een lege waarde is geen inhoud: rustiger dan een ingevulde waarde */
+  ctl = ctl.replace('<span class="waarde">Nog ', '<span class="waarde leeg">Nog ');
   const labelTag = labelFor && ctl + onder ? `<label class="lbl" id="l_${p.key}" for="${id}">${lbl}</label>` : `<span class="lbl" id="l_${p.key}">${lbl}</span>`;
   return `<div class="punt ${klaar && !neutraal ? "klaar" : ""} ${p.verplicht ? "" : "optioneel"} ${neutraal ? "info" : ""} ${breed ? "breed" : ""}">
     <span class="bol">${neutraal ? icoon("info", 18) : klaar ? icoon("vink", 12) : ""}</span>
@@ -283,15 +303,15 @@ function faseHtml(f) {
   const m = [];
   if (f.nr === 1 && o.concept) m.push(`<div class="melding oranje"><b>Concept.</b> Deze order staat nog niet in het overzicht. Vul alles in en klik onderaan op Opslaan.</div>`);
   if (status === "rood") m.push(`<div class="melding rood"><b>Te laat.</b> ${esc(waaromTeLaat(o, f.nr))}.</div>`);
-  if (lopend(status) && !magRol) m.push(`<div class="melding">Deze fase is van ${esc(eigenaar)} (${ROLLEN[f.eigenaar].toLowerCase()}). Je kunt meelezen en rechts een open punt plaatsen.</div>`);
+  if (!magRol && status !== "grijs") m.push(`<div class="melding met-icoon">${icoon("oog", 20)}<div><b>Alleen meelezen.</b> Deze fase is van ${esc(eigenaar)} (${ROLLEN[f.eigenaar].toLowerCase()}).${lopend(status) ? " Mist er iets? Plaats rechts een open punt." : ""}</div></div>`);
   if (o.heropend?.[f.nr]) m.push(`<div class="melding oranje">Heropend door ${esc(o.heropend[f.nr].door)}, ${tijdstip(o.heropend[f.nr].op)}.${magRol ? `<button type="button" class="knop" data-afronden="${f.nr}">Opnieuw afronden</button>` : ""}</div>`);
   if (status === "groen") {
     const af = [...o.log].reverse().find(l => l.wat === `Fase ${faseLabel(f.nr)} afgerond`);
     m.push(`<div class="melding groen">Afgerond${af ? ` door ${esc(af.door)}, ${tijdstip(af.op)}` : ""}.${magRol ? " Iets verkeerd ingevuld? Je kunt het hieronder herstellen; elke wijziging komt in het logboek." : ""}${ik.rol === "manager" ? `<button type="button" class="knop" data-heropen="${f.nr}">Fase heropenen</button>` : ""}</div>`);
   }
   if (status === "grijs") {
-    const wacht = vereist(o, f.nr).filter(v => !["groen", "nvt"].includes(faseStatus(o, v))).map(faseLabel).join(" en ");
-    m.push(`<div class="melding">Deze fase start zodra ${wacht ? `fase ${wacht} is afgerond` : ""}${wacht && f.nr === 4 && !o.vink.binnen ? " en " : ""}${f.nr === 4 && !o.vink.binnen ? "de auto binnen is" : ""}.</div>`);
+    const kop = f.nr === 5 ? "Je kunt de aflevering nog niet voorbereiden." : `Fase ${faseLabel(f.nr)} is nog niet begonnen.`;
+    m.push(`<div class="melding slot">${icoon("slot", 20)}<div><b>${kop}</b> ${waaromOpSlot(o, f.nr).map(esc).join(" ")}</div></div>`);
   }
   if (f.nr === 5) {
     const wp = o.opmerkingen.filter(x => x.open && [2, 4].includes(x.fase));
@@ -300,7 +320,7 @@ function faseHtml(f) {
   if (f.nr === 3) m.push(`<div class="melding">Loopt tegelijk met fase 2. De werkplaats kan beginnen zodra de auto binnen is.</div>`);
   if (f.nr === 3 || f.nr === 5) {
     const d = verkoopDelen(o);
-    m.push(`<div class="balk-blok"><div class="veld-lbl">Voortgang verkoop en aflevering</div>${delenBalk(d, "Verkoop en aflevering")}<div class="delen-labels">${d.map(x => `<span class="${x.klaar ? "af" : ""}">${x.nr}. ${esc(x.label)}</span>`).join("")}</div></div>`);
+    m.push(`<div class="balk-blok"><div class="veld-lbl">Voortgang verkoop en aflevering</div>${delenBalk(d, "Verkoop en aflevering")}<div class="delen-labels">${d.map(x => `<span class="${x.klaar ? "af" : x.open ? "nu" : ""}">${x.nr}. ${esc(x.label)}</span>`).join("")}</div></div>`);
   }
   if (f.nr === "ott") m.push(`<div class="melding">Loopt tegelijk met fase 4. Aflevering kan pas groen als de OTT-code er is.</div>`);
 
@@ -316,11 +336,14 @@ function faseHtml(f) {
       <button type="button" class="knop donker ${open ? "uit" : ""}" id="opslaan" ${open ? 'aria-disabled="true"' : ""}>Opslaan</button>
       <span>${open ? `Nog ${open} ${open === 1 ? "punt" : "punten"} open. Tot die tijd blijft de order een concept.` : "Alles ingevuld."}</span></div>`;
   }
+  if (f.nr === 5 && o.vink.afgeleverd && o.heeftInruil) voet = `<div class="fase-voet">
+      <a class="knop" href="briefje-handelsauto.html?id=${o.id}" target="_blank">Briefje handelsauto (A4)</a>
+      <span>Voor achter de ruit van de inruil ${esc(o.inruil?.kenteken || "")}.</span></div>`;
   if (f.nr === 3) voet = `<div class="fase-voet">
       <button type="button" class="knop" id="agenda" ${o.afleverdatum && o.aflevertijd ? "" : "disabled"}>Zet in agenda</button>
       <a class="knop" href="briefje.html?id=${o.id}" target="_blank">Print briefje voorruit</a></div>`;
 
-  return `<section class="fase" id="fase-${f.nr}" aria-labelledby="fase-titel">
+  return `<section class="fase ${status === "grijs" ? "op-slot" : magRol ? "" : "alleen-lezen"}" id="fase-${f.nr}" aria-labelledby="fase-titel">
     <div class="fase-kop">
       <div class="boven"><div><h2 id="fase-titel">Fase ${faseLabel(f.nr)} · ${f.naam}</h2><p>${esc(wie)} · ${gedaan} van ${verplicht.length} klaar</p></div>${pil(status)}</div>
       <div class="voortgang"><i class="st-${status}" style="width:${pct}%"></i></div>
@@ -410,7 +433,7 @@ function teken() {
       const s = faseStatus(o, f.nr);
       const vorige = i ? faseStatus(o, stappen[i - 1].nr) : "";
       return `<button type="button" class="stap ${s} ${f.nr === gekozen ? "gekozen" : ""} ${vorige === "groen" ? "na-groen" : ""}" data-naar="${f.nr}" ${f.nr === gekozen ? 'aria-current="step"' : ""}>
-        <span class="bol">${s === "groen" ? icoon("vink", 14) : faseLabel(f.nr)}</span><span class="nm">${f.naam}</span><span class="st">${STATUS_TEKST[s]}</span></button>`;
+        <span class="bol">${s === "groen" ? icoon("vink", 14) : s === "grijs" ? icoon("slot", 14) : faseLabel(f.nr)}</span><span class="nm">${f.naam}</span><span class="st">${STATUS_TEKST[s]}</span></button>`;
     }).join("")}</nav>
     <div class="order-grid">
       <div class="${nieuweFase ? "vervaag-in" : ""}">${faseHtml(faseInfo(gekozen))}</div>
@@ -456,7 +479,22 @@ hoofd.addEventListener("change", e => {
       zet(o, d.pad, w);
       if (d.pad === "type" && w !== "nieuw") o.voorraad = null;
       if (d.pad === "type" && w === "nieuw") o.voorraad ||= "winkel";
+      if (d.pad === "inruil.kenteken") { delete o.inruil.merk; delete o.inruil.model; delete o.inruil.rdw; }
+      if (d.pad === "auto.model" && o.premie && o.premie.model !== w) delete o.premie;
     }, `${d.label} gewijzigd`);
+    /* merk en model van de inruil komen uit de open data van de RDW */
+    if (d.pad === "inruil.kenteken" && w) rdwAuto(w).then(auto => {
+      if (o.inruil.kenteken !== w) return;
+      wijzig(() => { if (auto) Object.assign(o.inruil, auto, { rdw: true }); else o.inruil.rdw = false; },
+        auto ? `RDW: inruil is een ${auto.merk} ${auto.model}` : "");
+    });
+  } else if (d.premie) {
+    const pr = laadPremies().find(x => x.id === t.value);
+    wijzig(() => {
+      if (pr) o.premie = { id: pr.id, model: pr.model, soort: pr.soort, bedrag: pr.bedrag, code: pr.code, tot: pr.tot };
+      else if (t.value === "geen") o.premie = { id: "geen", model: o.auto.model };
+      else delete o.premie;
+    }, pr ? `Premie gekozen: ${pr.soort}, ${bedrag(pr.bedrag)}, premiecode ${pr.code}` : t.value === "geen" ? "Premie: geen premie" : "Premie leeggemaakt");
   } else if (d.importkeuze) {
     const imp = laadImports().find(i => i.chassis === t.value);
     wijzig(() => {
@@ -471,7 +509,8 @@ hoofd.addEventListener("change", e => {
     wijzig(() => { a[d.veld] = t.type === "checkbox" ? t.checked : t.value; }, `Onderdeel ${a.naam}: ${d.veld} bijgewerkt`);
   } else if (d.poets) {
     wijzig(() => { o.poets = { ...(o.poets || {}), [d.poets]: t.value }; }, "Poetser ingepland");
-    if (d.poets === "datum" && t.value && dagenTot(t.value) < 1) toast("Minder dan 24 uur vooraf ingepland bij de poetser. Dat kost extra.");
+    if (d.poets === "datum" && t.value && o.afleverdatum && t.value > o.afleverdatum) toast(`Let op: de poetsbeurt (${datumKort(t.value)}) staat na de aflevering (${datumKort(o.afleverdatum)}). Plan hem eerder in.`, "rood");
+    else if (d.poets === "datum" && t.value && dagenTot(t.value) < 1) toast("Minder dan 24 uur vooraf ingepland bij de poetser. Dat kost extra.");
   }
 });
 
@@ -510,7 +549,7 @@ hoofd.addEventListener("click", e => {
   if (t.id === "afwijking_melden") {
     const tekst = document.getElementById("afwijking").value.trim(); if (!tekst) return;
     wijzig(() => o.opmerkingen.push({ id: Date.now(), fase: 2, tekst, open: true, auteur: ik.naam, op: nu() }), "Afwijking gemeld");
-    toast(`Melding naar ${o.verkoper} en Lisa Brouwer.`); return;
+    toast(`Melding naar ${o.verkoper} en Nils Bullinga.`); return;
   }
   if (t.id === "agenda") agendaBestand();
   if (t.id === "wijz_sturen") {

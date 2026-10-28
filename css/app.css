@@ -205,28 +205,29 @@ textarea.invoer{min-height:68px;resize:vertical;line-height:1.45}
 @media (max-width:1100px){.order-grid{grid-template-columns:1fr}}
 
 .fase{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.fase-kop{padding:18px 20px 16px}
+.fase-kop{padding:22px 24px 18px}
 .fase-kop .boven{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-.fase-kop h2{font-size:var(--t-kop);font-weight:800}
-.fase-kop p{margin-top:2px}
+.fase-kop h2{font-size:24px;font-weight:800;letter-spacing:-.015em;line-height:1.2}
+.fase-kop p{margin-top:4px;color:var(--muted)}
 .voortgang{margin-top:14px;height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden}
 .voortgang i{display:block;height:100%;border-radius:3px;transition:width var(--duur-traag) var(--ease-out)}
-.fase-meldingen{display:flex;flex-direction:column;gap:8px;padding:0 20px 16px}
+.fase-meldingen{display:flex;flex-direction:column;gap:10px;padding:0 24px 20px}
 
-.groep h3{font-size:var(--t-klein);font-weight:700;padding:16px 20px 8px;border-top:1px solid var(--line);background:var(--surface-2)}
-.punt{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:4px 12px;align-items:start;padding:12px 20px;border-top:1px solid var(--line)}
+.groep h3{font-size:16px;font-weight:800;letter-spacing:-.01em;color:var(--ink);padding:22px 24px 10px;border-top:1px solid var(--line)}
+.punt{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:4px 14px;align-items:start;padding:13px 24px;border-top:1px solid var(--line)}
 .groep h3+.punt{border-top:none}
 .punt>.bol{width:20px;height:20px;border-radius:50%;border:1.5px solid #c3c8ce;display:grid;place-items:center;margin-top:1px}
 .punt.klaar>.bol{background:var(--st-groen);border-color:var(--st-groen);color:#fff}
 .punt.optioneel:not(.klaar)>.bol{border-style:dashed}
 .punt.info>.bol{border:none}
 .punt .lbl{display:block;font-weight:600;line-height:1.35;padding-top:2px}
-.punt .meta{font-size:var(--t-klein);margin-top:3px;line-height:1.4}
+.punt .meta{font-size:var(--t-klein);margin-top:3px;line-height:1.4;color:var(--muted)}
 .punt .meta.rood{color:var(--st-rood);font-weight:600}
 .punt .ctl{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 .punt .ctl .invoer{width:230px}
 .punt .ctl .invoer.half{width:150px}
 .punt .waarde{font-weight:600;text-align:right;padding-top:2px}
+.punt .waarde.leeg{font-weight:400;color:var(--muted)}
 .punt.breed .onder{grid-column:2/-1;margin-top:6px}
 @media (max-width:760px){
   .punt{grid-template-columns:20px minmax(0,1fr)}
@@ -252,7 +253,7 @@ textarea.invoer{min-height:68px;resize:vertical;line-height:1.45}
 .lijstje{list-style:none}
 .lijstje li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
 .toevoegen{display:flex;gap:8px;margin-top:10px}
-.fase-voet{padding:14px 20px;border-top:1px solid var(--line);background:var(--surface-2);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.fase-voet{padding:16px 24px;border-top:1px solid var(--line);background:var(--surface-2);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .fase-voet.stapel{flex-direction:column;align-items:stretch}
 .fase-voet.stapel .knop{align-self:flex-start}
 
@@ -429,10 +430,12 @@ details.opgelost .items{margin-top:10px}
 .tabel .delen{min-width:140px}
 
 /* ---------- orderdetail: balk verkoop en aflevering, keuze na klantcontact ---------- */
-.balk-blok{display:flex;flex-direction:column;gap:6px}
+.balk-blok{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.balk-blok .veld-lbl{font-size:13px;font-weight:700;color:var(--ink)}
 .balk-blok .delen i{height:8px}
-.delen-labels{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;font-size:11.5px;line-height:1.3}
-.delen-labels .af{font-weight:700}
+.delen-labels{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px 6px;font-size:12.5px;line-height:1.3;color:var(--muted)}
+.delen-labels .af{color:var(--st-groen);font-weight:600}
+.delen-labels .nu{color:var(--ink);font-weight:800}
 @media (max-width:760px){.delen-labels{display:none}}
 .keuze-datum{border:none;display:flex;flex-direction:column;gap:6px;padding:10px 12px;background:var(--surface-2);border-radius:8px}
 .keuze-datum label{display:flex;align-items:center;gap:8px;cursor:pointer}
@@ -474,6 +477,7 @@ details.opgelost .items{margin-top:10px}
   box-shadow:var(--shadow-card);animation:in-beeld var(--duur-traag) var(--ease-out) both;transition:opacity .3s,transform .3s
 }
 .toast.groen{background:var(--st-groen)}
+.toast.rood{background:var(--st-rood)}
 .toast.weg{opacity:0;transform:translateY(6px)}
 
 /* ---------- telefoon en smal scherm: menu wordt een balk bovenin ---------- */
@@ -497,6 +501,22 @@ details.opgelost .items{margin-top:10px}
 .concepten{margin-bottom:20px}
 .order-titel .verwijder{margin-left:auto}
 .wijziging{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-#f_premie .form-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+#f_premie .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media (max-width:760px){#f_premie .form-grid{grid-template-columns:1fr 1fr}}
+.premietabel tr.nieuw-model td{border-top:2px solid var(--line)}
+.premietabel .invoer{width:130px}
+.premietabel input[type=number]{width:100px}
+.premietabel{width:100%}
+@media (max-width:760px){.premietabel{display:block;overflow-x:auto}}
+#f_soort .grijs{color:var(--muted);font-size:var(--t-klein)}
+#f_soort .toevoegen .invoer{max-width:320px}
 .poets-dag .dag-leeg{font-size:var(--t-klein)}
+
+/* fase die je niet mag bewerken: grijzer, zodat je meteen ziet dat het meelezen is */
+.fase.alleen-lezen,.fase.op-slot{background:var(--surface-2)}
+.fase.alleen-lezen .groep,.fase.op-slot .groep{opacity:.5;filter:grayscale(1)}
+/* fase die nog niet begonnen is: slotje bij de melding */
+.melding.slot,.melding.met-icoon{display:flex;gap:10px;align-items:flex-start}
+.melding.slot svg,.melding.met-icoon svg{flex:none;margin-top:1px}
+.fase.alleen-lezen .melding.met-icoon{background:var(--surface);border:1px solid var(--line)}
+.fase.op-slot .melding.slot{background:var(--surface);border:1px solid var(--line)}
