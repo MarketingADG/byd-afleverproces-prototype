@@ -15,7 +15,11 @@
   .boven { display: flex; justify-content: space-between; align-items: center; }
   .boven img { height: 11mm; }
   .boven .wat { font-size: 15pt; font-weight: 700; }
-  .datum { font-size: 44pt; font-weight: 800; letter-spacing: -.02em; line-height: 1; margin-top: 12mm; }
+  .midden { display: flex; justify-content: space-between; align-items: flex-start; gap: 10mm; margin-top: 12mm; }
+  .meldcode { text-align: right; }
+  .meldcode .lbl { font-size: 13pt; font-weight: 700; }
+  .meldcode .code { font-size: 64pt; font-weight: 800; letter-spacing: .02em; line-height: 1; }
+  .datum { font-size: 44pt; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
   .tijd { font-size: 22pt; font-weight: 700; margin-top: 3mm; }
   .klant { font-size: 30pt; font-weight: 800; margin-top: 9mm; }
   .auto { font-size: 15pt; font-weight: 600; margin-top: 2mm; }
@@ -38,10 +42,15 @@
   document.getElementById("vel").outerHTML = o ? `
     <div class="vel">
       <div class="boven"><img src="assets/adg-groep.svg" alt="ADG Groep"><span class="wat">Aflevering</span></div>
-      <div class="datum">${o.afleverdatum ? lang(o.afleverdatum) : "Datum nog niet gepland"}</div>
-      ${o.aflevertijd ? `<div class="tijd">${o.aflevertijd.replace(":", ".")} uur</div>` : ""}
+      <div class="midden">
+        <div>
+          <div class="datum">${o.afleverdatum ? lang(o.afleverdatum) : "Datum nog niet gepland"}</div>
+          ${o.aflevertijd ? `<div class="tijd">${o.aflevertijd.replace(":", ".")} uur</div>` : ""}
+        </div>
+        <div class="meldcode"><div class="lbl">Meldcode</div><div class="code">${esc(meldcode(o) || "----")}</div></div>
+      </div>
       <div class="klant">${esc(klantNaam(o))}</div>
-      <div class="auto">BYD ${esc(o.auto.model || "")}${o.auto.kenteken ? " · " + esc(o.auto.kenteken) : ""}</div>
+      <div class="auto">${esc(autoNaam(o))}${o.auto.kenteken ? " · " + esc(o.auto.kenteken) : ""}</div>
       <div class="onder">
         <div><div class="lbl">Mastercare</div><div class="w ${o.mastercare ? "mc" : ""}">${o.mastercare ? "Ja" : "Nee"}</div></div>
         <div><div class="lbl">Verkoper</div><div class="w">${esc(o.verkoper)}</div></div>

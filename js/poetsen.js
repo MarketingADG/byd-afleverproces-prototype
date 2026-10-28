@@ -4,7 +4,6 @@ const ik = kopbalk("poetsen");
 const orders = laadOrders();
 const bak = document.getElementById("poetsen");
 
-function nu() { const d = new Date(); return `${naarIso(d)}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
 
 function teken() {
   const ingepland = orders.filter(o => o.poets?.datum && !o.vink.afgeleverd)
@@ -16,7 +15,7 @@ function teken() {
       ${ingepland.filter(o => o.poets.datum === d).map(o => `
         <div class="poets-kaart ${o.poets.gedaan ? "gedaan" : ""}">
           <div class="boven">
-            <div><div class="auto">BYD ${esc(o.auto.model)}</div><div class="kent">${esc(o.auto.kenteken || "Nog geen kenteken")}</div></div>
+            <div><div class="auto">${esc(autoNaam(o))}</div><div class="kent">${esc(o.auto.kenteken || "Nog geen kenteken")}</div></div>
             <span class="mc ${o.poets.vorm === "Mastercare" ? "ja" : "nee"}">${o.poets.vorm === "Mastercare" ? "Mastercare" : "Standaard"}</span>
           </div>
           <div class="feit">Aflevering ${o.afleverdatum ? datumKort(o.afleverdatum) + (o.aflevertijd ? ", " + o.aflevertijd.replace(":", ".") : "") : "nog niet gepland"} · ${esc(klantNaam(o))}</div>

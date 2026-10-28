@@ -334,6 +334,139 @@ details.opgelost .items{margin-top:10px}
 .dash-sectie{margin-top:24px}
 .dash-sectie>h2{font-size:var(--t-kop);font-weight:800;display:flex;gap:8px;align-items:center;margin-bottom:10px}
 
+/* ---------- overzicht: drie kolommen met autoblokjes ---------- */
+.bord.drie{grid-auto-columns:minmax(270px,1fr);grid-template-columns:minmax(270px,1fr) minmax(300px,1.25fr) minmax(270px,1fr)}
+.bord.drie .kolom-kop p{max-width:34ch}
+.dag-kop{display:flex;align-items:center;gap:8px;font-size:var(--t-klein);font-weight:800;padding:8px 6px 6px}
+.dag-kop.lijn{border-top:1.5px solid #c3c8ce;margin-top:6px;padding-top:10px}
+.dag-kop .n{margin-left:auto;font-weight:700;background:var(--surface);border-radius:999px;padding:0 7px}
+.blok{margin-bottom:8px}
+.blok{position:relative;background:var(--surface);border-radius:12px;padding:12px 12px 10px;box-shadow:var(--schaduw);transition:box-shadow var(--duur) var(--ease-in-out),transform var(--duur) var(--ease-out)}
+.blok:hover{box-shadow:var(--schaduw-hover);transform:translateY(-1px)}
+.blok .b1{display:flex;align-items:center;gap:8px}
+.blok .naam{font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none}
+.blok .naam::after{content:"";position:absolute;inset:0;border-radius:12px}
+.blok .naam:focus-visible{outline:none}
+.blok .naam:focus-visible::after{box-shadow:0 0 0 2px var(--ink)}
+.blok .label{font-size:11px;font-weight:800;letter-spacing:.02em;background:var(--ink);color:#fff;border-radius:5px;padding:1px 6px}
+.blok .b2,.blok .reden,.blok .b3,.blok .b4{padding-left:16px}
+.blok .b2{margin-top:1px}
+.blok .reden{font-size:var(--t-klein);font-weight:600;color:var(--st-rood);margin-top:6px;line-height:1.35}
+.blok .b3{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:var(--t-klein);font-weight:600}
+.blok .datum{flex:1}
+.blok .ico{display:inline-flex;align-items:center;gap:3px}
+.blok .b4{font-size:var(--t-klein);margin-top:5px}
+.blok .delen{margin:10px 0 0 16px}
+.sico{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:7px;background:var(--st-grijs-soft);color:var(--st-grijs)}
+.sico.rood{background:var(--st-rood-soft);color:var(--st-rood)}
+.sico.oranje{background:var(--st-oranje-soft);color:var(--st-oranje)}
+.sico.groen{background:var(--st-groen-soft);color:var(--st-groen)}
+.sico-knop{position:relative;z-index:1;border:none;background:none;padding:0;cursor:pointer;border-radius:8px}
+.sico-knop:hover .sico,.sico-knop[aria-expanded=true] .sico{box-shadow:0 0 0 1.5px currentColor}
+.sico-knop:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+.od-lijst{position:relative;z-index:1;margin:8px 0 0 16px;padding:8px 10px;background:var(--surface-2);border-radius:8px;font-size:var(--t-klein)}
+.od-lijst ul,.od-ul{list-style:none;display:flex;flex-direction:column;gap:4px}
+.od-lijst li,.od-ul li{display:flex;align-items:center;gap:6px}
+
+/* voortgangsbalk in delen */
+.delen{display:flex;gap:3px}
+.delen i{flex:1;height:6px;border-radius:3px;background:var(--st-grijs-soft)}
+.delen i.open{background:#d5d9de}
+.delen i.af{background:var(--st-groen)}
+.delen.groot i{height:8px}
+
+/* ---------- werkplaats: weekagenda ---------- */
+.week-nav{display:flex;gap:6px}
+.wp-legenda{margin-bottom:12px}
+.week{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;align-items:start}
+.week-dag{background:var(--vlak);border-radius:14px;padding:10px 8px 8px;min-height:180px}
+.week-dag.vandaag{background:#dfe3e7;box-shadow:inset 0 0 0 2px var(--ink)}
+.week-dag h2{font-size:var(--t-tekst);font-weight:800;padding:0 4px 10px}
+.dag-leeg{font-size:var(--t-klein);padding:12px 4px;text-align:center}
+.wp-blok{
+  display:flex;flex-direction:column;gap:1px;width:100%;text-align:left;font:inherit;color:var(--ink);cursor:pointer;
+  background:var(--surface);border:none;border-left:4px solid var(--st-grijs);border-radius:10px;padding:9px 10px;margin-bottom:8px;box-shadow:var(--schaduw);
+  transition:box-shadow var(--duur) var(--ease-in-out),transform var(--duur) var(--ease-out)
+}
+.wp-blok:hover{box-shadow:var(--schaduw-hover);transform:translateY(-1px)}
+.wp-blok.rood{border-left-color:var(--st-rood)}
+.wp-blok.oranje{border-left-color:var(--st-oranje)}
+.wp-blok.groen{border-left-color:var(--st-groen);background:var(--st-groen-soft)}
+.wp-blok .wb1{display:flex;align-items:center;gap:6px;font-weight:700}
+.wp-blok .wb3{font-size:var(--t-klein);font-weight:600}
+.wp-blok .wb4{font-size:var(--t-klein);margin-top:3px}
+.wp-taken{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:28px}
+.wp-taken .taken-groep{margin-top:0}
+.wp-taken .taak{grid-template-columns:8px minmax(0,1fr) minmax(0,1fr) 150px}
+.taak.met-knop{grid-template-columns:8px minmax(0,1fr) auto auto}
+.taak.met-knop .wie{text-decoration:none}
+.taak.met-knop .wie:hover{text-decoration:underline}
+.leeg-staat.klein{padding:28px 20px}
+@media (max-width:1100px){.week{grid-template-columns:1fr}.week-dag{min-height:0}.wp-taken{grid-template-columns:1fr}}
+
+/* venster (dialoog) */
+.venster{border:none;border-radius:16px;padding:0;width:min(520px,calc(100vw - 32px));margin:auto;color:var(--ink);box-shadow:var(--shadow-card)}
+.venster::backdrop{background:rgba(40,40,48,.4)}
+.venster[open]{animation:zoom-in var(--duur) var(--ease-out)}
+.venster-kop{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 20px 12px}
+.venster-kop h2{font-size:var(--t-kop);font-weight:800}
+.venster>.melding{margin:0 20px 8px}
+.melding.groen,.melding.oranje,.melding.rood{color:var(--ink)}
+.venster h3{font-size:var(--t-klein);font-weight:700;padding:14px 20px 6px}
+.venster .od-ul,.venster>.zij-leeg{padding:0 20px}
+.venster-lijst .punt{padding:12px 20px}
+.venster-voet{padding:16px 20px;border-top:1px solid var(--line);margin-top:16px;background:var(--surface-2)}
+
+/* ---------- formulieren in een paneel (importlijst, premielijst) ---------- */
+.form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 12px;margin-top:12px}
+.form-grid .veld{display:flex;flex-direction:column;gap:5px}
+.form-grid .knoppen{grid-column:1/-1;display:flex;gap:8px}
+@media (max-width:760px){.form-grid{grid-template-columns:1fr 1fr}}
+#premies>.paneel+.paneel{margin-top:16px}
+.imp-stap{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+.imp-stap .invoer{width:130px}
+.tabel td.nr,.tabel th.nr{text-align:right}
+.tabel .delen{min-width:140px}
+
+/* ---------- orderdetail: balk verkoop en aflevering, keuze na klantcontact ---------- */
+.balk-blok{display:flex;flex-direction:column;gap:6px}
+.balk-blok .delen i{height:8px}
+.delen-labels{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;font-size:11.5px;line-height:1.3}
+.delen-labels .af{font-weight:700}
+@media (max-width:760px){.delen-labels{display:none}}
+.keuze-datum{border:none;display:flex;flex-direction:column;gap:6px;padding:10px 12px;background:var(--surface-2);border-radius:8px}
+.keuze-datum label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.keuze-datum input[type=radio]{accent-color:var(--ink)}
+
+/* ---------- taken met een knop ---------- */
+.taak.met-actie{grid-template-columns:8px minmax(0,1fr) minmax(0,1.6fr) 130px 96px}
+.taak.met-actie .wie{text-decoration:none}
+.taak.met-actie .wie:hover{text-decoration:underline}
+.taak .actie{text-align:right}
+@media (max-width:760px){.taak.met-actie{grid-template-columns:8px 1fr}.taak.met-actie>*:nth-child(n+3){grid-column:2;text-align:left}}
+
+/* ---------- importlijst ---------- */
+.imp-rij{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,.9fr) minmax(220px,1.3fr);gap:16px;align-items:start;padding:14px 16px;border-top:1px solid var(--line)}
+.rijen>.imp-rij:first-child{border-top:none}
+.imp-rij .wie{font-weight:700;text-decoration:none}
+.imp-rij a.wie:hover{text-decoration:underline}
+.imp-rij .sub{font-size:var(--t-klein);margin-top:2px}
+.imp-rij .mono{font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:.02em}
+.imp-voortgang .delen{margin-top:4px}
+.imp-rij.gemarkeerd{background:var(--st-oranje-soft)}
+@media (max-width:900px){.imp-rij{grid-template-columns:1fr 1fr}}
+.paneel h2+.form-grid{margin-top:12px}
+#f_import{margin-bottom:16px}
+
+/* ---------- dashboard: extra tegels en afleveringen per periode ---------- */
+.kpi.drie-rijen{grid-template-columns:repeat(3,minmax(0,1fr))}
+.kpi .getal.oranje{color:var(--st-oranje)}
+.paneel.afgeleverd{margin-bottom:16px}
+.paneel-kop{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.afl-cijfers{display:flex;gap:40px;margin-bottom:14px}
+.afl-cijfers .getal{font-size:var(--t-titel);font-weight:800}
+.afl-cijfers .lbl{font-size:var(--t-klein);font-weight:600}
+
 /* ---------- melding rechtsonder ---------- */
 .toasts{position:fixed;right:20px;bottom:20px;z-index:200;display:flex;flex-direction:column;gap:8px;max-width:380px}
 .toast{
@@ -357,4 +490,5 @@ details.opgelost .items{margin-top:10px}
   .filterbalk .zoek{width:100%;margin-left:0}
   .stappen{overflow-x:auto}
   .stap{min-width:76px}
+  .week-nav{width:100%}
 }

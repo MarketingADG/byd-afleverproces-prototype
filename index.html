@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Bord · Afleverproces BYD Groningen</title>
+<title>Overzicht · Afleverproces BYD Groningen</title>
 <link rel="stylesheet" href="css/huisstijl.css">
 <link rel="stylesheet" href="css/componenten.css">
 <link rel="stylesheet" href="css/animaties.css">
@@ -14,25 +14,22 @@
 <main class="pagina">
   <div class="pagina-kop">
     <div>
-      <h1>Bord</h1>
+      <h1>Overzicht</h1>
       <p id="samenvatting"></p>
     </div>
     <div class="legenda">
-      <span><span class="stip st-oranje"></span>Loopt</span>
+      <span><span class="stip st-grijs"></span>Op schema</span>
+      <span><span class="stip st-oranje"></span>Let op</span>
       <span><span class="stip st-rood"></span>Te laat</span>
-      <span><span class="stip st-groen"></span>Afgeleverd</span>
     </div>
   </div>
   <div class="filterbalk">
-    <div class="segment" id="weergave" role="group" aria-label="Welke auto's"></div>
     <label class="vh" for="f_verkoper">Verkoper</label>
     <select id="f_verkoper" class="invoer"><option value="">Alle verkopers</option></select>
-    <label class="vh" for="f_type">Soort</label>
-    <select id="f_type" class="invoer"><option value="">Nieuw, gebruikt en import</option><option value="nieuw">Nieuw</option><option value="gebruikt">Gebruikt</option><option value="import">Import</option></select>
     <label class="vh" for="zoek">Zoeken</label>
-    <input id="zoek" class="invoer zoek" type="search" placeholder="Zoek op klant, model of kenteken">
+    <input id="zoek" class="invoer zoek" type="search" placeholder="Zoek op klant, model, kenteken of meldcode">
   </div>
-  <div class="bord" id="bord"></div>
+  <div class="bord drie" id="rijen"></div>
 </main>
 <script src="js/proces.js"></script>
 <script src="js/demo-data.js"></script>

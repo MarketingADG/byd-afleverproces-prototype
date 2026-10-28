@@ -21,6 +21,7 @@ function relatief(iso) {
   return n > 0 ? `over ${n} dagen` : `${-n} dagen geleden`;
 }
 function initialen(naam) { return naam.split(" ").filter(w => /^[A-Z]/.test(w)).map(w => w[0]).join(""); }
+function eersteKlein(s) { return s ? s[0].toLowerCase() + s.slice(1) : ""; }
 function faseLabel(nr) { return nr === "ott" ? "5.1" : String(nr); }
 
 /* ---------- wie kijkt er ---------- */
@@ -55,36 +56,64 @@ const ICOON = {
   "pijl-links": `<path d="M19 12H5M11 18l-6-6 6-6"/>`,
   info: `<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>`,
   bubbel: `<path d="M5 19V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8.5z"/>`,
+  auto: `<path d="M5 17h14M5 17a2 2 0 1 0 4 0M15 17a2 2 0 1 0 4 0M3 17v-4l2-5h14l2 5v4"/><path d="M3 13h18"/>`,
+  werkplaats: `<path d="M14.5 6.5a4 4 0 0 0-5.3 5.3L4 17l3 3 5.2-5.2a4 4 0 0 0 5.3-5.3l-2.6 2.6-2.4-.6-.6-2.4z"/>`,
+  onderdelen: `<path d="M12 3 4 7v10l8 4 8-4V7z"/><path d="m4 7 8 4 8-4M12 11v10"/>`,
+  import: `<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>`,
+  premie: `<path d="M17 6.5A6 6 0 1 0 17 17.5M4 10h9M4 14h9"/>`,
+  archief: `<path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.5"/><path d="M4 4v4.5h4.5M12 8v4l3 2"/>`,
   bellen: `<path d="M5 4h3.5l2 5-2.5 1.5a11 11 0 0 0 5.5 5.5l1.5-2.5 5 2V19a2 2 0 0 1-2 2A17 17 0 0 1 3 6a2 2 0 0 1 2-2"/>`
 };
 function icoon(naam, maat = 18) {
   return `<svg viewBox="0 0 24 24" width="${maat}" height="${maat}" fill="none" stroke="currentColor" stroke-width="${maat < 16 ? 2.2 : 1.75}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICOON[naam]}</svg>`;
 }
 
-/* ---------- menu links ---------- */
+/* ---------- menu links ----------
+   Elke afdeling heeft een eigen omgeving: verkoop en afleverspecialist het overzicht in drie
+   rijen, de werkplaatschef een weekagenda, de manager het dashboard. Kom je via "Bekijk als"
+   op een pagina die niet bij jouw rol hoort, dan ga je naar je eigen startpagina. */
+
+const MENU = {
+  overzicht: ["index.html", "Overzicht", "auto"],
+  taken: ["taken.html", "Mijn taken", "taken"],
+  import: ["import.html", "Importlijst", "import"],
+  poetsen: ["poetsen.html", "Poetsplanning", "poetsen"],
+  werkplaats: ["werkplaats.html", "Werkplaats", "werkplaats"],
+  behandeld: ["behandeld.html", "Behandeld", "archief"],
+  dashboard: ["dashboard.html", "Dashboard", "dashboard"],
+  premies: ["premies.html", "Premielijst", "premie"]
+};
+const MENU_PER_ROL = {
+  verkoper: ["overzicht", "taken", "import", "poetsen"],
+  afleverspecialist: ["overzicht", "taken", "import", "poetsen"],
+  werkplaatschef: ["werkplaats", "behandeld"],
+  poetser: ["poetsen"],
+  administratie: ["taken"],
+  manager: ["dashboard", "overzicht", "werkplaats", "taken", "import", "premies", "poetsen"]
+};
+function startpagina(rol) { return MENU[MENU_PER_ROL[rol][0]][0]; }
 
 function kopbalk(actief) {
   const ik = huidigePersoon();
+  if (actief && !MENU_PER_ROL[ik.rol].includes(actief)) { location.replace(startpagina(ik.rol)); throw new Error("andere startpagina"); }
   const orders = laadOrders();
   const lopend = orders.filter(o => huidigeFase(o) !== "klaar");
   const rood = lopend.filter(o => kaartStatus(o) === "rood").length;
   const poetsOpen = orders.filter(o => o.poets?.datum && !o.poets.gedaan && !o.vink.afgeleverd).length;
-
-  const links = [
-    ["index.html", "Bord", "bord", rood ? `<span class="teller rood" title="${rood} te laat">${rood}</span>` : ""],
-    ["taken.html", "Mijn taken", "taken", ""],
-    ["poetsen.html", "Poetsplanning", "poetsen", poetsOpen ? `<span class="teller">${poetsOpen}</span>` : ""],
-    ...(ik.rol === "manager" ? [["dashboard.html", "Dashboard", "dashboard", ""]] : [])
-  ];
+  const tellers = {
+    overzicht: rood ? `<span class="teller rood" title="${rood} te laat">${rood}</span>` : "",
+    poetsen: poetsOpen ? `<span class="teller">${poetsOpen}</span>` : ""
+  };
+  const links = MENU_PER_ROL[ik.rol].map(k => [...MENU[k], k, tellers[k] || ""]);
   const opties = PERSONEN.map(p => `<option value="${esc(p.naam)}" ${p.naam === ik.naam ? "selected" : ""}>${esc(p.naam)} · ${ROLLEN[p.rol]}</option>`).join("");
 
   const zij = document.createElement("aside");
   zij.className = "zijmenu";
   zij.innerHTML = `
-    <a class="zij-merk" href="index.html"><img src="assets/cobranding-byd.svg" alt="BYD en ADG Groep"></a>
+    <a class="zij-merk" href="${startpagina(ik.rol)}"><img src="assets/cobranding-byd.svg" alt="BYD en ADG Groep"></a>
     <div class="zij-titel">Afleverproces Groningen</div>
-    ${["verkoper", "manager"].includes(ik.rol) ? `<a class="knop-nieuw" href="order.html?nieuw=1">${icoon("plus", 16)}Nieuwe order</a>` : ""}
-    <nav class="zij-nav">${links.map(([h, t, k, n]) => `<a href="${h}" class="${k === actief ? "actief" : ""}" ${k === actief ? 'aria-current="page"' : ""}>${icoon(k)}<span>${t}</span>${n}</a>`).join("")}</nav>
+    ${["verkoper", "afleverspecialist", "manager"].includes(ik.rol) ? `<a class="knop-nieuw" href="order.html?nieuw=1">${icoon("plus", 16)}Nieuwe order</a>` : ""}
+    <nav class="zij-nav">${links.map(([h, t, ic, k, n]) => `<a href="${h}" class="${k === actief ? "actief" : ""}" ${k === actief ? 'aria-current="page"' : ""}>${icoon(ic)}<span>${t}</span>${n}</a>`).join("")}</nav>
     <div class="zij-onder">
       <div class="ik"><span class="avatar">${initialen(ik.naam)}</span><div><div class="nm">${esc(ik.naam)}</div><div class="rl">${ROLLEN[ik.rol]}</div></div></div>
       <div class="bekijk"><label class="veld-lbl" for="bekijk_als">Bekijk als</label><select id="bekijk_als" class="invoer">${opties}</select></div>
@@ -115,3 +144,25 @@ function toast(tekst, soort = "") {
 const STATUS_TEKST = { grijs: "Wacht", oranje: "Loopt", rood: "Te laat", groen: "Afgerond", nvt: "Niet van toepassing" };
 
 function pil(status, tekst = STATUS_TEKST[status]) { return `<span class="pil ${status}"><span class="stip st-${status}"></span>${esc(tekst)}</span>`; }
+
+function nu() { const d = new Date(); return `${naarIso(d)}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
+
+/* Voortgangsbalk in delen: elk deel groen zodra het klaar is. */
+function delenBalk(delen, wat) {
+  const klaar = delen.filter(d => d.klaar).length;
+  return `<div class="delen" role="img" aria-label="${wat}: ${klaar} van ${delen.length} klaar">${delen.map(d =>
+    `<i class="${d.klaar ? "af" : d.open ? "open" : ""}" title="${esc(d.label)}: ${d.klaar ? "klaar" : d.open ? "nu aan de beurt" : "nog niet"}"></i>`).join("")}</div>`;
+}
+function importDelen(imp) {
+  const stand = importStand(imp);
+  return IMPORT_STAPPEN.map((label, i) => ({ label: `${i}. ${label}`, klaar: !!imp?.stappen?.[i], open: i === stand }));
+}
+
+/* Gekleurd icoon in een autoblokje. */
+const ICOON_TEKST = {
+  onderdelen: { grijs: "Werkplaats heeft de onderdelen nog niet bekeken", rood: "Er ontbreekt een onderdeel", oranje: "Onderdelen nog onderweg", groen: "Alle onderdelen binnen" },
+  werkplaats: { rood: "Nog niet ingepland in de werkplaats", oranje: "Ingepland in de werkplaats", groen: "Werkplaatsklaar" }
+};
+function statusIcoon(soort, status, extra = "") {
+  return `<span class="sico ${status}" title="${ICOON_TEKST[soort][status]}" ${extra}>${icoon(soort, 15)}<span class="vh">${ICOON_TEKST[soort][status]}</span></span>`;
+}

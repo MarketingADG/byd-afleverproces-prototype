@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Werkplaats · Afleverproces BYD Groningen</title>
+<link rel="stylesheet" href="css/huisstijl.css">
+<link rel="stylesheet" href="css/componenten.css">
+<link rel="stylesheet" href="css/animaties.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<main class="pagina">
+  <div class="pagina-kop">
+    <div>
+      <h1>Werkplaats</h1>
+      <p id="weektitel"></p>
+    </div>
+    <div class="week-nav" role="group" aria-label="Week kiezen">
+      <button type="button" class="knop" data-week="-1">Vorige week</button>
+      <button type="button" class="knop" data-week="0">Deze week</button>
+      <button type="button" class="knop" data-week="1">Volgende week</button>
+    </div>
+  </div>
+  <div class="legenda wp-legenda">
+    <span><span class="stip st-rood"></span>Nog niet ingepland</span>
+    <span><span class="stip st-oranje"></span>Ingepland, nog niet klaar</span>
+    <span><span class="stip st-groen"></span>WP-klaar</span>
+  </div>
+  <div class="week" id="week"></div>
+  <div class="wp-taken" id="wp_taken"></div>
+</main>
+<dialog class="venster" id="venster" aria-labelledby="venster_titel"></dialog>
+<script src="js/proces.js"></script>
+<script src="js/demo-data.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/werkplaats.js"></script>
+</body>
+</html>

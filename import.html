@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Importlijst · Afleverproces BYD Groningen</title>
+<link rel="stylesheet" href="css/huisstijl.css">
+<link rel="stylesheet" href="css/componenten.css">
+<link rel="stylesheet" href="css/animaties.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<main class="pagina smal">
+  <div class="pagina-kop">
+    <div>
+      <h1>Importlijst</h1>
+      <p>Alle auto's die geïmporteerd worden, verkocht en onverkocht. Een order met hetzelfde chassisnummer loopt vanzelf mee.</p>
+    </div>
+    <button type="button" class="knop donker" id="toevoegen_open">Auto toevoegen</button>
+  </div>
+  <form class="paneel" id="f_import" hidden>
+    <h2>Auto toevoegen bij de inkoop</h2>
+    <div class="form-grid">
+      <div class="veld"><label class="veld-lbl" for="i_merk">Merk</label><input id="i_merk" name="merk" class="invoer" required></div>
+      <div class="veld"><label class="veld-lbl" for="i_model">Model</label><input id="i_model" name="model" class="invoer" required></div>
+      <div class="veld"><label class="veld-lbl" for="i_uitvoering">Uitvoering</label><input id="i_uitvoering" name="uitvoering" class="invoer" required></div>
+      <div class="veld"><label class="veld-lbl" for="i_chassis">Chassisnummer</label><input id="i_chassis" name="chassis" class="invoer" required minlength="17" maxlength="17" placeholder="17 tekens"></div>
+      <div class="veld"><label class="veld-lbl" for="i_kleur_ext">Kleur exterieur</label><input id="i_kleur_ext" name="kleur_ext" class="invoer" required></div>
+      <div class="veld"><label class="veld-lbl" for="i_kleur_int">Kleur interieur</label><input id="i_kleur_int" name="kleur_int" class="invoer" required></div>
+      <div class="veld"><label class="veld-lbl" for="i_bouwjaar">Bouwjaar</label><input id="i_bouwjaar" name="bouwjaar" class="invoer" type="number" min="1990" max="2030" required></div>
+      <div class="veld"><label class="veld-lbl" for="i_km">Kilometerstand</label><input id="i_km" name="km" class="invoer" type="number" min="0" required></div>
+      <div class="knoppen"><button class="knop donker">Toevoegen</button><button type="button" class="knop" id="toevoegen_dicht">Annuleren</button></div>
+    </div>
+  </form>
+  <div class="filterbalk">
+    <div class="segment" id="weergave" role="group" aria-label="Welke auto's"></div>
+    <label class="vh" for="zoek">Zoeken</label>
+    <input id="zoek" class="invoer zoek" type="search" placeholder="Zoek op merk, model, chassis of klant">
+  </div>
+  <div id="lijst"></div>
+</main>
+<script src="js/proces.js"></script>
+<script src="js/demo-data.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/import.js"></script>
+</body>
+</html>
